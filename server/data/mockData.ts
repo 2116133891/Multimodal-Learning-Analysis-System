@@ -7,6 +7,7 @@ import type {
   MultimodalFeatureVector, ModalityFeature, EmotionPolarity,
   StudentMultimodalProfile, InterventionEffectiveness,
   RejectReason, TeacherDecisionLog,
+  MultimodalTimeSeriesPoint, StudentMultimodalTimeSeries,
 } from '../../src/types';
 
 // ===================== 课程信息 =====================
@@ -361,6 +362,141 @@ function generateMultimodalFeatures(): MultimodalFeatureVector[] {
   return features;
 }
 
+// ===================== 多模态时序数据（Time-Series Alignment）=====================
+
+/**
+ * 生成多模态时间序列对齐数据
+ * 每个学生-周组合生成 10 个对齐的时间点，每个点包含：
+ *   - videoEmotion: 视频微表情情绪值 (0-1)
+ *   - textSentiment: 文本语义情感值 (0-1)
+ *   - interactionCount: 交互行为频次 (整数)
+ *
+ * 时序特征：
+ * - 前5号学生后期参与度下降 → 随时间递减
+ * - 正常学生呈现课堂节奏：导入→讲授→互动→总结
+ * - 三个模态之间存在一定的相关性（高情感时交互更多）
+ */
+function generateMultimodalTimeSeries(): StudentMultimodalTimeSeries[] {
+  const series: StudentMultimodalTimeSeries[] = [];
+
+  for (const student of students) {
+    for (let week = 1; week <= 16; week++) {
+      const isStruggling = student.id <= 's005' && week > 10;
+      const numId = parseInt(student.id.replace('s', ''));
+
+      // 基础参数：根据学生类型和周次调整
+      const baseVideo = isStruggling ? 0.35 + numId * 0.01 : 0.6 + (numId % 30) / 100;
+      const baseText = 0.45 + (numId % 40) / 100;
+      const baseInteraction = isStruggling ? 2 + Math.floor(numId * 0.1) : 5 + (numId % 8);
+
+      const points: MultimodalTimeSeriesPoint[] = [];
+      const fusionScores: number[] = [];
+
+      // 10 个时间点对应 45 分钟课堂的节奏划分
+      const phaseBoundaries = [0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45];
+
+      for (let i = 0; i < 10; i++) {
+        const tStart = phaseBoundaries[i];
+        const tEnd = phaseBoundaries[i + 1];
+        const tMid = (tStart + tEnd) / 2;
+
+        // 模拟课堂节奏：导入(0-5) → 讲授(5-20) → 互动(20-35) → 总结(35-45)
+        let phaseFactor: number; // 0~1，描述当前阶段的学习投入强度
+        if (tMid < 5) {
+          // 导入阶段：快速升温
+          phaseFactor = tMid / 5;
+        } else if (tMid < 20) {
+          // 讲授阶段：高峰在中间
+          phaseFactor = 1 - Math.abs(tMid - 12) / 15;
+        } else if (tMid < 35) {
+          // 互动阶段：最高峰
+          phaseFactor = 0.85 + Math.sin((tMid - 20) * 0.15) * 0.15;
+        } else {
+          // 总结阶段：逐渐回落
+          phaseFactor = 0.9 - (tMid - 35) * 0.02;
+        }
+
+        // 加入随机扰动
+        const noise = (Math.random() - 0.5) * 0.15;
+
+        // 视频专注度：受 phaseFactor 驱动， struggling 学生衰减更快
+        const videoEmotion = Math.min(1, Math.max(0,
+          baseVideo * (0.5 + phaseFactor * 0.5) + noise
+        ));
+
+        // 文本情感：与视频专注度正相关（专注时情感更积极），加独立噪声
+        const textSentiment = Math.min(1, Math.max(0,
+          baseText * (0.4 + phaseFactor * 0.4) + videoEmotion * 0.15 + noise * 0.5
+        ));
+
+        // 交互频次：与 phaseFactor 强相关，互动阶段最高
+        const interactionCount = Math.max(0, Math.min(20,
+          Math.round(baseInteraction * (0.3 + phaseFactor * 0.7) + (Math.random() - 0.5) * 3)
+        ));
+
+        // 时间戳：基于课堂开始时间推算
+        const minute = Math.round(tMid);
+        const second = Math.floor(Math.random() * 60);
+        const timestamp = `2025-W${week}-T${String(minute).padStart(2, '0')}m${String(second).padStart(2, '0')}s`;
+
+        points.push({
+          timestamp,
+          videoEmotion: Math.round(videoEmotion * 1000) / 1000,
+          textSentiment: Math.round(textSentiment * 1000) / 1000,
+          interactionCount,
+        });
+      }
+
+      // ── 加权融合算法 ──────────────────────────────────
+      // 权重：视频 0.5，文本 0.3，交互 0.2（归一化到 0-1）
+      const VIDEO_WEIGHT = 0.5;
+      const TEXT_WEIGHT = 0.3;
+      const INTERACTION_WEIGHT = 0.2;
+      const MAX_INTERACTION_NORMALIZE = 20; // 交互频次最大值用于归一化
+
+      for (const pt of points) {
+        const interactionNorm = pt.interactionCount / MAX_INTERACTION_NORMALIZE;
+        const fused = (
+          pt.videoEmotion * VIDEO_WEIGHT +
+          pt.textSentiment * TEXT_WEIGHT +
+          interactionNorm * INTERACTION_WEIGHT
+        ) * 100; // 映射到 0-100
+        fusionScores.push(Math.round(Math.min(100, Math.max(0, fused))));
+      }
+
+      // ── 统计摘要 ──────────────────────────────────────
+      const avgVideo = points.reduce((s, p) => s + p.videoEmotion, 0) / points.length;
+      const avgText = points.reduce((s, p) => s + p.textSentiment, 0) / points.length;
+      const totalInteractions = points.reduce((s, p) => s + p.interactionCount, 0);
+
+      // 趋势判断：前半段 vs 后半段均值比较
+      const half = Math.floor(points.length / 2);
+      const firstHalf = fusionScores.slice(0, half).reduce((a, b) => a + b, 0) / half;
+      const secondHalf = fusionScores.slice(half).reduce((a, b) => a + b, 0) / (fusionScores.length - half);
+      const engagementTrend: 'rising' | 'stable' | 'declining' =
+        secondHalf > firstHalf + 5 ? 'rising'
+          : secondHalf < firstHalf - 5 ? 'declining'
+          : 'stable';
+
+      series.push({
+        studentId: student.id,
+        week,
+        moduleId: week <= 4 ? 'm1' : week <= 8 ? 'm2' : week <= 12 ? 'm3' : 'm4',
+        points,
+        fusionEngagementScore: fusionScores,
+        summary: {
+          avgVideoEmotion: Math.round(avgVideo * 1000) / 1000,
+          avgTextSentiment: Math.round(avgText * 1000) / 1000,
+          totalInteractions,
+          engagementTrend,
+        },
+      });
+    }
+  }
+
+  return series;
+}
+
 // ===================== 学生画像数据 =====================
 
 function generateStudentProfiles(): StudentMultimodalProfile[] {
@@ -654,4 +790,8 @@ export function getAllStudentProfiles(): StudentMultimodalProfile[] {
 
 export function getAllInterventions(): InterventionEffectiveness[] {
   return generateInterventionEffectiveness();
+}
+
+export function getAllMultimodalTimeSeries(): StudentMultimodalTimeSeries[] {
+  return generateMultimodalTimeSeries();
 }

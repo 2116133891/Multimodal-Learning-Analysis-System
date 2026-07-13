@@ -3,6 +3,7 @@ import type {
   LearningRecord, CourseState, VitalityScore, DataType,
   MultimodalFeatureVector, ModalityFeature,
   VideoMicroExpression, TextSemanticData, InteractionBehavior,
+  MultimodalTimeSeriesPoint, StudentMultimodalTimeSeries,
 } from '../../src/types';
 
 // ===================== 传统聚合（向后兼容）=====================
@@ -207,4 +208,91 @@ export function getWeeklyAggregates(records: LearningRecord[]) {
     }
     return { week, counts: typeCounts, averages: typeAvgs };
   });
+}
+
+// ===================== 多模态时序融合算法 =====================
+
+/**
+ * 时间序列多模态融合
+ * 对每个时间点的三个模态数据按固定权重加权求和：
+ *   videoEmotion × 0.5 + textSentiment × 0.3 + interactionNorm × 0.2
+ * 输出 0-100 的融合投入度得分序列
+ *
+ * @param points 原始多模态时间点数组
+ * @param maxInteraction 交互频次归一化的分母（默认 20）
+ */
+export function computeTimeSeriesFusion(
+  points: MultimodalTimeSeriesPoint[],
+  maxInteraction = 20
+): number[] {
+  const VIDEO_WEIGHT = 0.5;
+  const TEXT_WEIGHT = 0.3;
+  const INTERACTION_WEIGHT = 0.2;
+
+  return points.map(pt => {
+    const interactionNorm = pt.interactionCount / maxInteraction;
+    const fused = (
+      pt.videoEmotion * VIDEO_WEIGHT +
+      pt.textSentiment * TEXT_WEIGHT +
+      interactionNorm * INTERACTION_WEIGHT
+    ) * 100;
+    return Math.round(Math.min(100, Math.max(0, fused)));
+  });
+}
+
+/**
+ * 判断时序趋势：比较后半段与前半段的均值
+ */
+export function computeTrend(scores: number[]): 'rising' | 'stable' | 'declining' {
+  const half = Math.floor(scores.length / 2);
+  if (half === 0) return 'stable';
+  const firstHalf = scores.slice(0, half).reduce((a, b) => a + b, 0) / half;
+  const secondHalf = scores.slice(half).reduce((a, b) => a + b, 0) / (scores.length - half);
+  if (secondHalf > firstHalf + 5) return 'rising';
+  if (secondHalf < firstHalf - 5) return 'declining';
+  return 'stable';
+}
+
+/**
+ * 构建完整的多模态时序数据集（含融合结果）
+ * 输入：原始视频/文本/交互三个独立序列
+ * 输出：按时间点对齐的 StudentMultimodalTimeSeries
+ *
+ * @param videoPoints 视频微表情序列（需包含 timestamp, emotion 字段）
+ * @param textPoints 文本语义序列（需包含 timestamp, sentimentScore 字段）
+ * @param interactionPoints 交互行为序列（需包含 timestamp, count 字段）
+ * @param timestamp 对齐锚点（ISO 时间戳列表）
+ */
+export function alignMultimodalTimeSeries(
+  videoPoints: Array<{ timestamp: string; emotion: string; score: number }>,
+  textPoints: Array<{ timestamp: string; sentimentScore: number }>,
+  interactionPoints: Array<{ timestamp: string; count: number }>,
+  timestamps: string[]
+): MultimodalTimeSeriesPoint[] {
+  // 构建查找表
+  const videoMap = new Map<string, number>();
+  for (const vp of videoPoints) {
+    if (vp.emotion === 'focused') {
+      videoMap.set(vp.timestamp, vp.score);
+    }
+  }
+
+  const textMap = new Map<string, number>();
+  for (const tp of textPoints) {
+    // sentimentScore 范围 -1~1，映射到 0~1
+    textMap.set(tp.timestamp, (tp.sentimentScore + 1) / 2);
+  }
+
+  const interactionMap = new Map<string, number>();
+  for (const ip of interactionPoints) {
+    interactionMap.set(ip.timestamp, ip.count);
+  }
+
+  // 按时间戳对齐
+  return timestamps.map(ts => ({
+    timestamp: ts,
+    videoEmotion: videoMap.get(ts) ?? 0.5,
+    textSentiment: textMap.get(ts) ?? 0.5,
+    interactionCount: interactionMap.get(ts) ?? 0,
+  }));
 }

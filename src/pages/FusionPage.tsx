@@ -5,6 +5,7 @@ import RechartsCard from '../components/RechartsCard';
 import {
   GitMerge,
   Clock,
+  User,
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -33,10 +34,28 @@ const modalityLabels: Record<string, string> = {
 };
 
 export default function FusionPage() {
-  const { records, multimodalFeatures, courseInfo, fetchData } = useStore();
+  const { records, multimodalFeatures, courseInfo, students, fetchData } = useStore();
   const [selectedWeek, setSelectedWeek] = useState(8);
+  const [selectedStudent, setSelectedStudent] = useState('s001');
+  const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
+  const [tsLoading, setTsLoading] = useState(false);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // ── 加载选中学生-周的时序数据 ──────────────────────────
+  useEffect(() => {
+    setTsLoading(true);
+    fetch(`/api/multimodal/time-series?studentId=${selectedStudent}&week=${selectedWeek}`)
+      .then(r => r.json())
+      .then(data => {
+        setTimeSeriesData(data);
+        setTsLoading(false);
+      })
+      .catch(() => {
+        setTimeSeriesData([]);
+        setTsLoading(false);
+      });
+  }, [selectedStudent, selectedWeek]);
 
   // ── 按周统计三种模态的平均特征 ──────────────────────────
   const weeklyModalities = useMemo(() => {
@@ -75,60 +94,44 @@ export default function FusionPage() {
   // ── 单学生示例融合特征 ──────────────────────────────────
   const exampleFeature = selectedFeatures.length > 0 ? selectedFeatures[0] : null;
 
-  // ── 模拟 45 分钟课堂的多模态时序数据 ────────────────────
-  // 为选中学生生成一节课的模拟数据：视频专注度、交互频率、情绪值
+  // ── 将时序数据转换为 Recharts LineChart 格式 ──────────
+  // 每条 point 包含 10 个时间戳 → 映射到 0-45min 刻度
   const classTimelineData = useMemo(() => {
-    if (selectedFeatures.length === 0) return [];
+    if (timeSeriesData.length === 0) return [];
 
-    // 取该周第一个学生的特征作为基础
-    // 确认有选中周的数据
-    const points: Array<{
-      time: string;
-      minute: number;
-      focus: number;
-      interaction: number;
-      emotion: number;
-    }> = [];
+    // 取第一条记录（通常是该学生本周的时序数据）
+    const ts = timeSeriesData[0];
+    if (!ts?.points || ts.points.length === 0) return [];
 
-    for (let minute = 0; minute <= 45; minute += 1) {
-      // 模拟课堂节奏：导入(0-5) → 讲授(5-20) → 互动(20-35) → 总结(35-45)
-      let focusBase: number;
-      let interactionBase: number;
-      let emotionBase: number;
-
-      if (minute < 5) {
-        // 导入阶段：快速进入状态
-        focusBase = 40 + minute * 5;
-        interactionBase = 2 + minute;
-        emotionBase = 50 + minute * 2;
-      } else if (minute < 20) {
-        // 讲授阶段：专注度先升后降
-        focusBase = 65 - Math.abs(minute - 12) * 1.5 + Math.random() * 5;
-        interactionBase = 3 + Math.random() * 3;
-        emotionBase = 55 + Math.random() * 10;
-      } else if (minute < 35) {
-        // 互动阶段：交互频率飙升
-        focusBase = 60 + Math.random() * 10;
-        interactionBase = 15 + Math.random() * 10;
-        emotionBase = 65 + Math.random() * 15;
-      } else {
-        // 总结阶段：平稳收尾
-        focusBase = 50 - (minute - 35) * 1.5 + Math.random() * 5;
-        interactionBase = 8 - (minute - 35) * 0.5 + Math.random() * 3;
-        emotionBase = 60 - (minute - 35) * 1 + Math.random() * 5;
-      }
-
-      points.push({
+    return ts.points.map((pt: any, idx: number) => {
+      // 将 10 个时间点均匀映射到 0-45 分钟
+      const minute = Math.round((idx / (ts.points.length - 1)) * 45);
+      // 将 videoEmotion(0-1) 和 textSentiment(0-1) 映射到 0-100
+      const focus = Math.round(pt.videoEmotion * 100);
+      const emotion = Math.round(pt.textSentiment * 100);
+      // 交互频次缩放到 0-100
+      const interaction = Math.min(100, Math.round((pt.interactionCount / 20) * 100));
+      return {
         time: `${minute}min`,
         minute,
-        focus: Math.min(100, Math.max(0, Math.round(focusBase))),
-        interaction: Math.min(100, Math.max(0, Math.round(interactionBase * 3))), // 缩放至 0-100
-        emotion: Math.min(100, Math.max(0, Math.round(emotionBase))),
-      });
-    }
+        focus,
+        interaction,
+        emotion,
+      };
+    });
+  }, [timeSeriesData]);
 
-    return points;
-  }, [selectedFeatures]);
+  // ── 融合得分序列（用于趋势分析） ──────────────────────
+  const fusionScoreSeries = useMemo(() => {
+    if (timeSeriesData.length === 0) return null;
+    const ts = timeSeriesData[0];
+    return {
+      scores: ts.fusionEngagementScore || [],
+      summary: ts.summary || null,
+      studentId: ts.studentId,
+      week: ts.week,
+    };
+  }, [timeSeriesData]);
 
   // ── 模态特征雷达图数据 ──────────────────────────────────
   const modalityRadarData = useMemo(() => {
@@ -148,8 +151,8 @@ export default function FusionPage() {
         <p className="text-sm text-slate-500 mt-1">多模态特征融合引擎 — 视频微表情、文本语义、交互行为的时序对齐与融合表征</p>
       </div>
 
-      {/* 周选择器 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4">
+      {/* 周选择器 + 学生选择器 */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4 flex-wrap">
         <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
           <Clock size={16} />
           选择周次：
@@ -161,6 +164,19 @@ export default function FusionPage() {
         >
           {Array.from({ length: 16 }, (_, i) => (
             <option key={i + 1} value={i + 1}>第{i + 1}周</option>
+          ))}
+        </select>
+        <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
+          <User size={16} />
+          选择学生：
+        </label>
+        <select
+          value={selectedStudent}
+          onChange={e => setSelectedStudent(e.target.value)}
+          className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        >
+          {students.map((s: any) => (
+            <option key={s.id} value={s.id}>{s.name}（{s.id}）</option>
           ))}
         </select>
         <span className="text-xs text-slate-400 ml-auto">
@@ -218,9 +234,9 @@ export default function FusionPage() {
         </AreaChart>
       </RechartsCard>
 
-      {/* ── 45 分钟课堂多模态时序对齐 ───────────────────── */}
+      {/* ── 45 分钟课堂多模态时序对齐（真实 API 数据） ──── */}
       <RechartsCard
-        title="45 分钟课堂多模态数据时序对齐（模拟）"
+        title="45 分钟课堂多模态数据时序对齐"
         toolbar={
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.video }} />视频专注度</span>
@@ -229,32 +245,70 @@ export default function FusionPage() {
           </div>
         }
       >
-        <LineChart data={classTimelineData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="time" tick={{ fill: COLORS.slate, fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
-          <YAxis domain={[0, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
-          <RTooltip
-            contentStyle={{
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              fontSize: '12px',
-            }}
-          />
-          <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
-          <Line
-            type="monotone" dataKey="focus" name="视频专注度"
-            stroke={COLORS.video} strokeWidth={2.5} dot={false} connectNulls
-          />
-          <Line
-            type="monotone" dataKey="interaction" name="交互频率"
-            stroke={COLORS.text} strokeWidth={2.5} dot={false} connectNulls
-          />
-          <Line
-            type="monotone" dataKey="emotion" name="情绪值"
-            stroke={COLORS.accent} strokeWidth={2.5} dot={false} connectNulls
-          />
-        </LineChart>
+        {tsLoading ? (
+          <div className="flex items-center justify-center h-[350px]">
+            <div className="text-sm text-slate-400">加载中...</div>
+          </div>
+        ) : classTimelineData.length > 0 ? (
+          <>
+            <LineChart data={classTimelineData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <XAxis dataKey="time" tick={{ fill: COLORS.slate, fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
+              <YAxis domain={[0, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+              <RTooltip
+                contentStyle={{
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  fontSize: '12px',
+                }}
+              />
+              <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
+              <Line
+                type="monotone" dataKey="focus" name="视频专注度"
+                stroke={COLORS.video} strokeWidth={2.5} dot={false} connectNulls
+              />
+              <Line
+                type="monotone" dataKey="interaction" name="交互频率"
+                stroke={COLORS.text} strokeWidth={2.5} dot={false} connectNulls
+              />
+              <Line
+                type="monotone" dataKey="emotion" name="情绪值"
+                stroke={COLORS.accent} strokeWidth={2.5} dot={false} connectNulls
+              />
+            </LineChart>
+            {/* 融合得分摘要 */}
+            {fusionScoreSeries && (
+              <div className="mt-4 p-3 bg-slate-50 rounded-lg grid grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-slate-500">趋势</p>
+                  <p className="text-sm font-bold" style={{
+                    color: fusionScoreSeries.summary?.engagementTrend === 'rising' ? '#059669'
+                      : fusionScoreSeries.summary?.engagementTrend === 'declining' ? '#dc2626' : '#64748b'
+                  }}>
+                    {fusionScoreSeries.summary?.engagementTrend === 'rising' ? '↑ 上升'
+                      : fusionScoreSeries.summary?.engagementTrend === 'declining' ? '↓ 下降'
+                      : '→ 稳定'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">平均融合得分</p>
+                  <p className="text-sm font-bold text-slate-800">
+                    {Math.round(fusionScoreSeries.scores.reduce((acc: number, val: number) => acc + val, 0) / fusionScoreSeries.scores.length)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">数据点数</p>
+                  <p className="text-sm font-bold text-slate-800">{fusionScoreSeries.scores.length}</p>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-[350px]">
+            <div className="text-sm text-slate-400">暂无数据</div>
+          </div>
+        )}
       </RechartsCard>
 
       {/* ── 融合策略对比 + 模态特征详情 ─────────────────── */}

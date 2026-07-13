@@ -101,6 +101,34 @@ export interface CourseInfo {
   objectives: Objective[];
 }
 
+// ===================== 多模态时序数据（Time-Series Alignment）=====================
+
+// 单时间点多模态对齐数据
+export interface MultimodalTimeSeriesPoint {
+  timestamp: string;   // ISO 时间戳
+  videoEmotion: number;       // 0-1，视频微表情情绪值（专注度）
+  textSentiment: number;      // 0-1，文本语义情感值
+  interactionCount: number;   // 整数，交互行为频次
+}
+
+// 学生-周级别的完整多模态时序数据集
+export interface StudentMultimodalTimeSeries {
+  studentId: string;
+  week: number;
+  moduleId: string;
+  // 10 个时间点对齐的多模态序列
+  points: MultimodalTimeSeriesPoint[];
+  // 融合后的投入度得分序列
+  fusionEngagementScore: number[];
+  // 各模态统计摘要
+  summary: {
+    avgVideoEmotion: number;
+    avgTextSentiment: number;
+    totalInteractions: number;
+    engagementTrend: 'rising' | 'stable' | 'declining';
+  };
+}
+
 // ===================== 多模态融合结果 =====================
 
 // 单模态特征向量

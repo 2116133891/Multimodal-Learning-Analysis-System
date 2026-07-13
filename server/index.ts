@@ -11,12 +11,14 @@ import {
   courseInfo, students, getAllLearningRecords,
   getAllVideoMicroExpressions, getAllTextSemantics, getAllInteractionBehaviors,
   getAllMultimodalFeatures, getAllStudentProfiles, getAllInterventions,
+  getAllMultimodalTimeSeries,
   generateVitalityScores, generateSuggestions, generateAlerts,
   getDataQualityMetrics,
 } from './data/mockData.js';
 import {
   computeCourseState, computeVitalityScore, getWeeklyAggregates,
   aggregateByModuleWeek, computeEngagementScore,
+  computeTimeSeriesFusion, computeTrend,
 } from './data/fusionEngine.js';
 
 const app = express();
@@ -147,6 +149,39 @@ app.get('/api/student-profile/:studentId', (req, res) => {
 
 // 干预有效性评估
 app.get('/api/interventions', (_req, res) => res.json(getAllInterventions()));
+
+// 多模态时序数据（Time-Series Alignment）
+app.get('/api/multimodal/time-series', (req, res) => {
+  const { studentId, week } = req.query;
+  let data = getAllMultimodalTimeSeries();
+  if (studentId) data = data.filter(d => d.studentId === studentId);
+  if (week) data = data.filter(d => d.week === Number(week));
+  res.json(data);
+});
+
+// 多模态时序融合得分（直接返回融合后的 engagement 序列）
+app.get('/api/multimodal/fusion-score', (req, res) => {
+  const { studentId, week } = req.query;
+  let data = getAllMultimodalTimeSeries();
+  if (studentId) data = data.filter(d => d.studentId === studentId);
+  if (week) data = data.filter(d => d.week === Number(week));
+
+  // 返回精简格式：时间戳 + 融合得分 + 摘要
+  const result = data.map(d => ({
+    studentId: d.studentId,
+    week: d.week,
+    moduleId: d.moduleId,
+    points: d.points.map(p => ({
+      timestamp: p.timestamp,
+      videoEmotion: p.videoEmotion,
+      textSentiment: p.textSentiment,
+      interactionCount: p.interactionCount,
+    })),
+    fusionEngagementScore: d.fusionEngagementScore,
+    summary: d.summary,
+  }));
+  res.json(result);
+});
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
