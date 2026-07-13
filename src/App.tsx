@@ -7,15 +7,16 @@ import DiagnosisPage from './pages/DiagnosisPage';
 import AIDecisionPage from './pages/AIDecisionPage';
 import VitalityPage from './pages/VitalityPage';
 import ImprovementPage from './pages/ImprovementPage';
+import StudentProfilePage from './pages/StudentProfilePage';
+import EfficacyEvalPage from './pages/EfficacyEvalPage';
 
-type Page = 'dashboard' | 'collection' | 'fusion' | 'diagnosis' | 'ai' | 'vitality' | 'improvement';
+type Page = 'dashboard' | 'collection' | 'fusion' | 'diagnosis' | 'ai' | 'vitality' | 'improvement' | 'profile' | 'efficacy';
 
 function App() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
 
   useEffect(() => {
-    // 启动时检查服务器健康状态
-    fetch('http://localhost:3001/api/health')
+    fetch('/api/health')
       .then(r => r.json())
       .catch(() => console.log('后端服务未启动，将使用模拟模式'));
   }, []);
@@ -29,6 +30,8 @@ function App() {
       case 'ai': return <AIDecisionPage />;
       case 'vitality': return <VitalityPage />;
       case 'improvement': return <ImprovementPage />;
+      case 'profile': return <StudentProfilePage />;
+      case 'efficacy': return <EfficacyEvalPage />;
       default: return <DashboardPage />;
     }
   };
