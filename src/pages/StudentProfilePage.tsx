@@ -1,33 +1,65 @@
-// ===== 学习者多模态画像页面 =====
-import { useEffect, useState } from 'react';
+// ===== 学习者多模态画像页面（重构：Recharts 学术图表） =====
+import { useEffect, useState, useMemo } from 'react';
 import { useStore } from '../hooks/useStore';
-import CardChart from '../components/CardChart';
-import { User, Brain, AlertCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import RechartsCard from '../components/RechartsCard';
+import {
+  User, Brain, AlertCircle, Lightbulb, TrendingUp,
+  Activity, Film, MousePointer2,
+} from 'lucide-react';
+import {
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  Radar, Tooltip as RTooltip, Legend as RLegend,
+  LineChart, Line, XAxis, YAxis, CartesianGrid,
+} from 'recharts';
 import type { StudentMultimodalProfile } from '../types';
 
+// ── 学术配色 ──────────────────────────────────────────────
+const COLORS = {
+  primary: '#2563eb',      // 科技蓝
+  primaryAlpha: 'rgba(37, 99, 235, 0.15)',
+  secondary: '#059669',    // 护眼绿
+  accent: '#7c3aed',       // 紫罗兰
+  warning: '#dc2626',      // 警示红
+  amber: '#d97706',        // 琥珀橙
+  slate: '#475569',        // 石灰色
+};
+
+const RADAR_DIMENSIONS = [
+  { key: 'knowledge', label: '知识掌握' },
+  { key: 'skill', label: '技能应用' },
+  { key: 'creativity', label: '创新能力' },
+  { key: 'collaboration', label: '协作能力' },
+  { key: 'attitude', label: '学习态度' },
+] as const;
+
 export default function StudentProfilePage() {
-  const { students, records, fetchData } = useStore();
+  const { students, records, fetchData, studentProfiles } = useStore();
   const [selectedStudent, setSelectedStudent] = useState(students[0]?.id || '');
   const [profile, setProfile] = useState<StudentMultimodalProfile | null>(null);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // 模拟生成学生画像数据（实际应从API获取）
+  // ── 优先从 API 获取画像数据，回退到本地模拟 ────────────
   useEffect(() => {
     if (!selectedStudent || students.length === 0) return;
     const student = students.find(s => s.id === selectedStudent);
     if (!student) return;
 
-    // 基于真实数据计算
+    // 尝试从 API 加载
+    const apiProfile = studentProfiles.find(p => p.studentId === selectedStudent);
+    if (apiProfile) {
+      setProfile(apiProfile);
+      return;
+    }
+
+    // 本地模拟数据（回退）
     const studentRecords = records.filter(r => r.studentId === selectedStudent);
     const week16Records = studentRecords.filter(r => r.week === 16);
     const behaviorRecords = week16Records.filter(r => r.type === 'behavior');
-
     const avgEngagement = behaviorRecords.length > 0
       ? Math.round(behaviorRecords.reduce((s, r) => s + r.value, 0) / behaviorRecords.length)
       : 60;
 
-    // 根据学生ID模拟不同的画像特征
     const numId = parseInt(selectedStudent.replace('s', ''));
     const isStruggling = numId <= 5;
 
@@ -67,7 +99,30 @@ export default function StudentProfilePage() {
         };
       }),
     });
-  }, [selectedStudent, students, records]);
+  }, [selectedStudent, students, records, studentProfiles]);
+
+  // ── 雷达图数据 ──────────────────────────────────────────
+  const radarData = useMemo(() => {
+    if (!profile) return [];
+    return RADAR_DIMENSIONS.map(dim => ({
+      subject: dim.label,
+      value: profile.abilityRadar[dim.key],
+      fullMark: 100,
+    }));
+  }, [profile]);
+
+  // ── 轨迹折线图数据 ──────────────────────────────────────
+  const trajectoryData = useMemo(() => {
+    if (!profile?.trajectory) return [];
+    return profile.trajectory.map(t => ({
+      week: `第${t.week}周`,
+      knowledge: t.abilityRadar.knowledge,
+      skill: t.abilityRadar.skill,
+      creativity: t.abilityRadar.creativity,
+      collaboration: t.abilityRadar.collaboration,
+      attitude: t.abilityRadar.attitude,
+    }));
+  }, [profile]);
 
   if (!profile) {
     return (
@@ -108,48 +163,44 @@ export default function StudentProfilePage() {
           <p className="text-sm text-slate-500">ID: {profile.studentId} · 第{profile.week}周</p>
         </div>
         <div className="text-right">
-          <p className="text-3xl font-bold text-blue-600">{profile.engagementScore}</p>
+          <p className="text-3xl font-bold" style={{ color: COLORS.primary }}>{profile.engagementScore}</p>
           <p className="text-xs text-slate-500">综合投入度</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* 五维能力雷达图 */}
-        <CardChart
-          title="五维能力雷达图"
-          option={{
-            tooltip: {},
-            radar: {
-              indicator: [
-                { name: '知识掌握', max: 100 },
-                { name: '技能应用', max: 100 },
-                { name: '创新能力', max: 100 },
-                { name: '协作能力', max: 100 },
-                { name: '学习态度', max: 100 },
-              ],
-              shape: 'polygon', splitNumber: 5,
-              axisName: { color: '#64748b' },
-              splitArea: { areaStyle: { color: ['#f8fafc', '#fff'] } },
-            },
-            series: [{
-              type: 'radar' as const,
-              data: [{
-                value: [
-                  profile.abilityRadar.knowledge, profile.abilityRadar.skill,
-                  profile.abilityRadar.creativity, profile.abilityRadar.collaboration,
-                  profile.abilityRadar.attitude,
-                ],
-                name: profile.studentName,
-                areaStyle: { color: 'rgba(59, 130, 246, 0.3)' },
-                itemStyle: { color: '#3b82f6' },
-                lineStyle: { color: '#3b82f6', width: 2 },
-              }],
-            }],
-          }}
-          height={350}
-        />
+        {/* ── 五维能力雷达图 ──────────────────────────────── */}
+        <RechartsCard title="五维能力雷达图">
+          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+            <PolarGrid stroke="#e2e8f0" />
+            <PolarAngleAxis dataKey="subject" tick={{ fill: COLORS.slate, fontSize: 13 }} />
+            <PolarRadiusAxis
+              angle={30}
+              domain={[0, 100]}
+              tick={{ fill: '#94a3b8', fontSize: 11 }}
+              axisLine={false}
+            />
+            <Radar
+              name={profile.studentName}
+              dataKey="value"
+              stroke={COLORS.primary}
+              strokeWidth={2.5}
+              fill={COLORS.primary}
+              fillOpacity={0.2}
+            />
+            <RTooltip
+              contentStyle={{
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                fontSize: '13px',
+              }}
+            />
+            <RLegend wrapperStyle={{ marginTop: '12px', fontSize: '13px' }} />
+          </RadarChart>
+        </RechartsCard>
 
-        {/* AI 精准诊断 */}
+        {/* ── AI 精准诊断 ───────────────────────────────── */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
           <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
             <Brain size={18} className="text-purple-600" />
@@ -175,42 +226,69 @@ export default function StudentProfilePage() {
           {/* 三模态指标 */}
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-              <span className="text-sm text-blue-700">📹 视频专注度</span>
+              <div className="flex items-center gap-2">
+                <Film size={16} className="text-blue-500" />
+                <span className="text-sm text-blue-700">视频专注度</span>
+              </div>
               <span className="text-lg font-bold text-blue-800">{profile.videoEmotionAvg}分</span>
             </div>
             <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-lg">
-              <span className="text-sm text-emerald-700">💬 文本情感</span>
+              <div className="flex items-center gap-2">
+                <Activity size={16} className="text-emerald-500" />
+                <span className="text-sm text-emerald-700">文本情感</span>
+              </div>
               <span className="text-lg font-bold text-emerald-800">{profile.textSentimentAvg}分</span>
             </div>
-            <div className="flex items-center justify-between p-3 bg-orange-50 rounded-lg">
-              <span className="text-sm text-orange-700">🖱️ 交互活跃度</span>
-              <span className="text-lg font-bold text-orange-800">{profile.interactionAvg}分</span>
+            <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg">
+              <div className="flex items-center gap-2">
+                <MousePointer2 size={16} className="text-amber-500" />
+                <span className="text-sm text-amber-700">交互活跃度</span>
+              </div>
+              <span className="text-lg font-bold text-amber-800">{profile.interactionAvg}分</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 学习能力发展轨迹 */}
-      <CardChart
-        title="学习能力发展轨迹（近4周）"
-        option={{
-          tooltip: { trigger: 'axis' as const },
-          legend: { data: ['知识', '技能', '创造力', '协作', '态度'], bottom: 0 },
-          xAxis: { type: 'category' as const, data: profile.trajectory.map(t => `第${t.week}周`) },
-          yAxis: { type: 'value' as const, min: 0, max: 100, axisLabel: { formatter: '{value}分' } },
-          series: [
-            { name: '知识', type: 'line' as const, data: profile.trajectory.map(t => t.abilityRadar.knowledge), smooth: true, itemStyle: { color: '#3b82f6' } },
-            { name: '技能', type: 'line' as const, data: profile.trajectory.map(t => t.abilityRadar.skill), smooth: true, itemStyle: { color: '#10b981' } },
-            { name: '创造力', type: 'line' as const, data: profile.trajectory.map(t => t.abilityRadar.creativity), smooth: true, itemStyle: { color: '#f59e0b' } },
-            { name: '协作', type: 'line' as const, data: profile.trajectory.map(t => t.abilityRadar.collaboration), smooth: true, itemStyle: { color: '#6366f1' } },
-            { name: '态度', type: 'line' as const, data: profile.trajectory.map(t => t.abilityRadar.attitude), smooth: true, itemStyle: { color: '#ec4899' } },
-          ],
-          grid: { left: 60, right: 20, top: 20, bottom: 60 },
-        }}
-        height={300}
-      />
+      {/* ── 学习能力发展轨迹 ──────────────────────────────── */}
+      <RechartsCard title="学习能力发展轨迹（近4周）">
+        <LineChart data={trajectoryData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+          <XAxis dataKey="week" tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+          <YAxis domain={[30, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+          <RTooltip
+            contentStyle={{
+              borderRadius: '8px',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+              fontSize: '12px',
+            }}
+          />
+          <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
+          <Line
+            type="monotone" dataKey="knowledge"
+            name="知识掌握" stroke={COLORS.primary} strokeWidth={2.5} dot={{ r: 3 }}
+          />
+          <Line
+            type="monotone" dataKey="skill"
+            name="技能应用" stroke={COLORS.secondary} strokeWidth={2.5} dot={{ r: 3 }}
+          />
+          <Line
+            type="monotone" dataKey="creativity"
+            name="创新能力" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 3 }}
+          />
+          <Line
+            type="monotone" dataKey="collaboration"
+            name="协作能力" stroke={COLORS.amber} strokeWidth={2.5} dot={{ r: 3 }}
+          />
+          <Line
+            type="monotone" dataKey="attitude"
+            name="学习态度" stroke={COLORS.warning} strokeWidth={2.5} dot={{ r: 3 }}
+          />
+        </LineChart>
+      </RechartsCard>
 
-      {/* AI 个性化建议 */}
+      {/* ── AI 个性化建议 ───────────────────────────────── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
           <Lightbulb size={18} className="text-amber-500" />
