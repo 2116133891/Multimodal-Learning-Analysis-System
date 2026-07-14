@@ -5,6 +5,7 @@ import type {
   OptimizationSuggestion, DiagnosticAlert, DataQualityMetrics, DataType,
   MultimodalFeatureVector, ModalityFeature,
   StudentMultimodalProfile, InterventionEffectiveness,
+  StudentMultimodalTimeSeries,
 } from '../types';
 
 // ===================== 课程信息 =====================
@@ -503,6 +504,116 @@ export const mockInterventions: InterventionEffectiveness[] = [
   },
 ];
 
+// ===================== 45 分钟课堂多模态时序数据 =====================
+
+/**
+ * 为指定学生生成 45 分钟课堂的多模态时序数据
+ * 每个学生-周组合生成 10 个对齐的时间点，模拟课堂节奏
+ */
+export function generateMockClassroomTimeSeries(
+  studentId: string,
+  week: number
+): StudentMultimodalTimeSeries {
+  const rand = seededRandom(hashString(studentId + week));
+  const numId = parseInt(studentId.replace('s', '') || '1');
+  const isStruggling = numId <= 5 && week > 10;
+
+  const baseVideo = isStruggling ? 0.35 + numId * 0.01 : 0.6 + (numId % 30) / 100;
+  const baseText = 0.45 + (numId % 40) / 100;
+  const baseInteraction = isStruggling ? 2 + Math.floor(numId * 0.1) : 5 + (numId % 8);
+
+  const points: StudentMultimodalTimeSeries['points'] = [];
+  const fusionScores: number[] = [];
+
+  // 10 个时间点均匀分布在 45 分钟内
+  const phaseBoundaries = [0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45];
+
+  for (let i = 0; i < 10; i++) {
+    const tMid = (phaseBoundaries[i] + phaseBoundaries[i + 1]) / 2;
+
+    // 模拟课堂节奏
+    let phaseFactor: number;
+    if (tMid < 5) {
+      phaseFactor = tMid / 5;
+    } else if (tMid < 20) {
+      phaseFactor = 1 - Math.abs(tMid - 12) / 15;
+    } else if (tMid < 35) {
+      phaseFactor = 0.85 + Math.sin((tMid - 20) * 0.15) * 0.15;
+    } else {
+      phaseFactor = 0.9 - (tMid - 35) * 0.02;
+    }
+
+    const noise = (rand() - 0.5) * 0.15;
+
+    const videoEmotion = Math.min(1, Math.max(0,
+      baseVideo * (0.5 + phaseFactor * 0.5) + noise
+    ));
+    const textSentiment = Math.min(1, Math.max(0,
+      baseText * (0.4 + phaseFactor * 0.4) + videoEmotion * 0.15 + noise * 0.5
+    ));
+    const interactionCount = Math.max(0, Math.min(20,
+      Math.round(baseInteraction * (0.3 + phaseFactor * 0.7) + (rand() - 0.5) * 3)
+    ));
+
+    const minute = Math.round(tMid);
+    const second = Math.floor(rand() * 60);
+    const timestamp = `2025-W${week}-T${String(minute).padStart(2, '0')}m${String(second).padStart(2, '0')}s`;
+
+    points.push({
+      timestamp,
+      videoEmotion: Math.round(videoEmotion * 1000) / 1000,
+      textSentiment: Math.round(textSentiment * 1000) / 1000,
+      interactionCount,
+    });
+
+    // 加权融合
+    const interactionNorm = interactionCount / 20;
+    const fused = (
+      videoEmotion * 0.5 +
+      textSentiment * 0.3 +
+      interactionNorm * 0.2
+    ) * 100;
+    fusionScores.push(Math.round(Math.min(100, Math.max(0, fused))));
+  }
+
+  const avgVideo = points.reduce((s, p) => s + p.videoEmotion, 0) / points.length;
+  const avgText = points.reduce((s, p) => s + p.textSentiment, 0) / points.length;
+  const totalInteractions = points.reduce((s, p) => s + p.interactionCount, 0);
+
+  const half = Math.floor(points.length / 2);
+  const firstHalf = fusionScores.slice(0, half).reduce((a, b) => a + b, 0) / half;
+  const secondHalf = fusionScores.slice(half).reduce((a, b) => a + b, 0) / (fusionScores.length - half);
+  const engagementTrend: 'rising' | 'stable' | 'declining' =
+    secondHalf > firstHalf + 5 ? 'rising'
+      : secondHalf < firstHalf - 5 ? 'declining'
+      : 'stable';
+
+  return {
+    studentId,
+    week,
+    moduleId: week <= 4 ? 'm1' : week <= 8 ? 'm2' : week <= 12 ? 'm3' : 'm4',
+    points,
+    fusionEngagementScore: fusionScores,
+    summary: {
+      avgVideoEmotion: Math.round(avgVideo * 1000) / 1000,
+      avgTextSentiment: Math.round(avgText * 1000) / 1000,
+      totalInteractions,
+      engagementTrend,
+    },
+  };
+}
+
+// 简单字符串哈希函数（用于确定性随机种子）
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
 // ===================== 统一导出 =====================
 
 export function generateAllMockData() {
@@ -518,5 +629,6 @@ export function generateAllMockData() {
     suggestions: mockSuggestions,
     studentProfiles: generateMockStudentProfiles(),
     interventions: mockInterventions,
+    classroomTimeSeries: (studentId: string, week: number) => generateMockClassroomTimeSeries(studentId, week),
   };
 }

@@ -1,4 +1,4 @@
-// ===== 数据融合页面（重构：Recharts 学术图表） =====
+// ===== 数据融合页面（重构：Recharts 学术图表 + Mock 降级） =====
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../hooks/useStore';
 import RechartsCard from '../components/RechartsCard';
@@ -6,6 +6,7 @@ import {
   GitMerge,
   Clock,
   User,
+  Loader2,
 } from 'lucide-react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid,
@@ -13,6 +14,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   Radar, AreaChart, Area,
 } from 'recharts';
+import { generateMockClassroomTimeSeries } from '../data/mockData';
 
 // ── 学术配色 ──────────────────────────────────────────────
 const COLORS = {
@@ -42,20 +44,36 @@ export default function FusionPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── 加载选中学生-周的时序数据 ──────────────────────────
+  // ── 加载选中学生-周的时序数据（Mock 降级） ──────────────────
   useEffect(() => {
+    if (!selectedStudent || students.length === 0) return;
     setTsLoading(true);
-    fetch(`/api/multimodal/time-series?studentId=${selectedStudent}&week=${selectedWeek}`)
-      .then(r => r.json())
+
+    // 尝试从 API 获取（生产环境可能不可用）
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 秒超时
+
+    fetch(`/api/multimodal/time-series?studentId=${selectedStudent}&week=${selectedWeek}`, {
+      signal: controller.signal,
+    })
+      .then(r => {
+        if (!r.ok) throw new Error('API unavailable');
+        return r.json();
+      })
       .then(data => {
         setTimeSeriesData(data);
         setTsLoading(false);
       })
       .catch(() => {
-        setTimeSeriesData([]);
+        // API 不可用时，使用本地 Mock 数据
+        const mockTS = generateMockClassroomTimeSeries(selectedStudent, selectedWeek);
+        setTimeSeriesData([mockTS]);
         setTsLoading(false);
+      })
+      .finally(() => {
+        clearTimeout(timeoutId);
       });
-  }, [selectedStudent, selectedWeek]);
+  }, [selectedStudent, selectedWeek, students.length]);
 
   // ── 按周统计三种模态的平均特征 ──────────────────────────
   const weeklyModalities = useMemo(() => {
@@ -95,21 +113,16 @@ export default function FusionPage() {
   const exampleFeature = selectedFeatures.length > 0 ? selectedFeatures[0] : null;
 
   // ── 将时序数据转换为 Recharts LineChart 格式 ──────────
-  // 每条 point 包含 10 个时间戳 → 映射到 0-45min 刻度
   const classTimelineData = useMemo(() => {
     if (timeSeriesData.length === 0) return [];
 
-    // 取第一条记录（通常是该学生本周的时序数据）
     const ts = timeSeriesData[0];
     if (!ts?.points || ts.points.length === 0) return [];
 
     return ts.points.map((pt: any, idx: number) => {
-      // 将 10 个时间点均匀映射到 0-45 分钟
       const minute = Math.round((idx / (ts.points.length - 1)) * 45);
-      // 将 videoEmotion(0-1) 和 textSentiment(0-1) 映射到 0-100
       const focus = Math.round(pt.videoEmotion * 100);
       const emotion = Math.round(pt.textSentiment * 100);
-      // 交互频次缩放到 0-100
       const interaction = Math.min(100, Math.round((pt.interactionCount / 20) * 100));
       return {
         time: `${minute}min`,
@@ -121,7 +134,7 @@ export default function FusionPage() {
     });
   }, [timeSeriesData]);
 
-  // ── 融合得分序列（用于趋势分析） ──────────────────────
+  // ── 融合得分序列 ──────────────────────────────────────
   const fusionScoreSeries = useMemo(() => {
     if (timeSeriesData.length === 0) return null;
     const ts = timeSeriesData[0];
@@ -234,7 +247,7 @@ export default function FusionPage() {
         </AreaChart>
       </RechartsCard>
 
-      {/* ── 45 分钟课堂多模态时序对齐（真实 API 数据） ──── */}
+      {/* ── 45 分钟课堂多模态时序对齐 ──────────────────── */}
       <RechartsCard
         title="45 分钟课堂多模态数据时序对齐"
         toolbar={
@@ -247,7 +260,8 @@ export default function FusionPage() {
       >
         {tsLoading ? (
           <div className="flex items-center justify-center h-[350px]">
-            <div className="text-sm text-slate-400">加载中...</div>
+            <Loader2 size={24} className="text-blue-500 animate-spin mr-2" />
+            <div className="text-sm text-slate-400">加载时序数据中...</div>
           </div>
         ) : classTimelineData.length > 0 ? (
           <>
@@ -306,7 +320,7 @@ export default function FusionPage() {
           </>
         ) : (
           <div className="flex items-center justify-center h-[350px]">
-            <div className="text-sm text-slate-400">暂无数据</div>
+            <div className="text-sm text-slate-400">暂无时序数据</div>
           </div>
         )}
       </RechartsCard>
