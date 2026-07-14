@@ -61,7 +61,7 @@ export default function FusionPage() {
         return r.json();
       })
       .then(data => {
-        setTimeSeriesData(data);
+        setTimeSeriesData([...data]);
         setTsLoading(false);
       })
       .catch(() => {
@@ -266,7 +266,7 @@ export default function FusionPage() {
           </div>
         ) : classTimelineData.length > 0 ? (
           <>
-            <LineChart data={classTimelineData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
+            <LineChart key={`lc-${selectedStudent}-${selectedWeek}`} data={classTimelineData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }} isAnimationActive={true} animationDuration={1000} animationEasing="ease-out">
               <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
               <XAxis dataKey="time" tick={{ fill: COLORS.slate, fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
               <YAxis domain={[0, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
