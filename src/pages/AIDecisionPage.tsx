@@ -1,7 +1,7 @@
-// ===== AI决策支持页面（重构：人机协同） =====
+// ===== AI决策支持页面（重构：人机协同 + 一键干预闭环） =====
 import { useEffect, useState } from 'react';
 import { useStore } from '../hooks/useStore';
-import { Brain, Check, X, Edit3, Clock, ChevronDown, Target, Sparkles, Send } from 'lucide-react';
+import { Brain, Check, X, Edit3, Clock, ChevronDown, Target, Sparkles, Send, Wand2, AlertTriangle, MessageSquare, Copy, CheckCircle2, Loader2 } from 'lucide-react';
 
 const categoryLabels: Record<string, string> = {
   rhythm: '教学节奏调整',
@@ -24,14 +24,269 @@ const rejectOptions: { value: string; label: string }[] = [
   { value: 'other', label: '其他原因' },
 ];
 
+// ── AI 沟通话术模板库 ──────────────────────────────────────
+const interventionTemplates: Record<string, string> = {
+  low_engagement: (week: number, evidence: string[], module: string) =>
+    `同学你好，系统注意到你在第 ${week} 周的学习中活跃度有所下降。${evidence.join('。')} 请问在课程学习上遇到了什么困难吗？建议复习${module}相关重点内容，如有需要随时联系任课教师。`,
+  knowledge_gap: (week: number, evidence: string[], module: string) =>
+    `同学你好，多模态分析显示你在第 ${week} 周「${module}」模块的知识掌握度低于预期。${evidence.join('。')} 系统建议你重新观看相关视频讲解，并完成配套练习题。加油！`,
+  performance_drop: (week: number, evidence: string[], module: string) =>
+    `同学你好，系统监测到你在第 ${week} 周的表现有所下滑。${evidence.join('。')} 这可能是学习节奏调整期的正常现象，建议适当休息并回顾之前的学习内容。`,
+  anomaly: (week: number, evidence: string[], module: string) =>
+    `同学你好，系统在第 ${week} 周发现了异常学习行为模式。${evidence.join('。')} 请检查是否按时完成了学习任务，如有技术问题请及时反馈。`,
+};
+
+// ── 模态框组件 ──────────────────────────────────────────────
+function InterventionModal({
+  isOpen,
+  onClose,
+  alert,
+  suggestions,
+  students,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  alert: { week: number; type: string; description: string; moduleId?: string; title: string } | null;
+  suggestions: any[];
+  students: any[];
+}) {
+  const [draftText, setDraftText] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && alert) {
+      setIsGenerating(true);
+      // 模拟 AI 生成延迟
+      const timer = setTimeout(() => {
+        const evidence = alert.description.split(/[。！？]/).filter(Boolean).slice(0, 3);
+        const module = alert.moduleId
+          ? { m1: '色彩基础与原理', m2: '造型与构图', m3: '风格探索与创新', m4: '综合创作与展示' }[alert.moduleId]
+          : '相关章节';
+        const template = interventionTemplates[alert.type] || interventionTemplates.anomaly;
+        setDraftText(template(alert.week, evidence, module));
+        setIsGenerating(false);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen, alert]);
+
+  if (!isOpen || !alert) return null;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(draftText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSend = async () => {
+    setIsSending(true);
+    // 模拟发送延迟
+    await new Promise(resolve => setTimeout(resolve, 1200));
+    setIsSending(false);
+    setShowSuccess(true);
+    setTimeout(() => {
+      setShowSuccess(false);
+      onClose();
+    }, 3000);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* 遮罩层 */}
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+
+      {/* 模态框 */}
+      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden animate-[slideUp_0.3s_ease-out]">
+        {/* 顶部渐变条 */}
+        <div className="h-1.5 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500" />
+
+        {/* 标题栏 */}
+        <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-gradient-to-r from-slate-50 to-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <Wand2 size={18} className="text-blue-600" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-slate-800">一键生成干预话术</h3>
+              <p className="text-xs text-slate-500">AI 基于多模态数据自动生成沟通草稿</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <X size={18} className="text-slate-400" />
+          </button>
+        </div>
+
+        {/* 内容区 */}
+        <div className="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
+          {/* 预警信息卡片 */}
+          <div className="bg-red-50 border border-red-100 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-red-500 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-red-800">{alert.title}</p>
+                <p className="text-xs text-red-600 mt-1">{alert.description}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full">第 {alert.week} 周</span>
+                  <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                    {alert.moduleId ? { m1: '色彩基础', m2: '造型构图', m3: '风格探索', m4: '综合创作' }[alert.moduleId] : '全模块'}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full capitalize">
+                    {alert.type === 'low_engagement' ? '参与度下降' : alert.type === 'knowledge_gap' ? '知识断层' : alert.type === 'performance_drop' ? '表现下滑' : '异常检测'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* AI 生成中 */}
+          {isGenerating && (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-center">
+                <Loader2 size={32} className="text-blue-500 animate-spin mx-auto mb-3" />
+                <p className="text-sm text-slate-500">AI 正在分析多模态数据...</p>
+                <p className="text-xs text-slate-400 mt-1">生成个性化沟通话术</p>
+              </div>
+            </div>
+          )}
+
+          {/* 话术编辑区 */}
+          {!isGenerating && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <MessageSquare size={14} className="text-blue-500" />
+                  AI 生成话术草稿
+                </label>
+                <button
+                  onClick={handleCopy}
+                  className="text-xs px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1"
+                >
+                  {copied ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                  {copied ? '已复制' : '复制'}
+                </button>
+              </div>
+              <textarea
+                value={draftText}
+                onChange={e => setDraftText(e.target.value)}
+                className="w-full p-4 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all"
+                rows={6}
+                placeholder="AI 生成的话术将显示在这里..."
+              />
+              <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
+                <Sparkles size={10} />
+                可根据实际情况手动修改，发送前请确认内容
+              </p>
+            </div>
+          )}
+
+          {/* 数据依据 */}
+          {!isGenerating && (
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100">
+              <h4 className="text-xs font-semibold text-blue-800 mb-2 flex items-center gap-1.5">
+                <Target size={12} />
+                话术生成依据
+              </h4>
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 text-xs text-blue-700">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                  基于第 {alert.week} 周多模态数据分析
+                </div>
+                <div className="flex items-center gap-2 text-xs text-blue-700">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                  检测到 {alert.type === 'low_engagement' ? '参与度下降' : alert.type === 'knowledge_gap' ? '知识掌握不足' : alert.type === 'performance_drop' ? '表现下滑趋势' : '行为异常'}
+                </div>
+                <div className="flex items-center gap-2 text-xs text-blue-700">
+                  <span className="w-1.5 h-1.5 bg-blue-400 rounded-full" />
+                  结合 {alert.moduleId ? { m1: '色彩基础', m2: '造型构图', m3: '风格探索', m4: '综合创作' }[alert.moduleId] : '全模块'} 学习情况
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 底部操作栏 */}
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors"
+          >
+            取消
+          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => {
+                setDraftText('');
+                setIsGenerating(true);
+                setTimeout(() => {
+                  const evidence = alert.description.split(/[。！？]/).filter(Boolean).slice(0, 3);
+                  const module = alert.moduleId
+                    ? { m1: '色彩基础与原理', m2: '造型与构图', m3: '风格探索与创新', m4: '综合创作与展示' }[alert.moduleId]
+                    : '相关章节';
+                  const template = interventionTemplates[alert.type] || interventionTemplates.anomaly;
+                  setDraftText(template(alert.week, evidence, module));
+                  setIsGenerating(false);
+                }, 600);
+              }}
+              className="px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+            >
+              <Wand2 size={14} />
+              重新生成
+            </button>
+            <button
+              onClick={handleSend}
+              disabled={isSending || !draftText}
+              className="px-6 py-2 text-sm text-white bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-medium shadow-sm"
+            >
+              {isSending ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  发送中...
+                </>
+              ) : (
+                <>
+                  <Send size={14} />
+                  一键发送（模拟）
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* 成功提示 */}
+        {showSuccess && (
+          <div className="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center animate-[fadeIn_0.3s_ease-out]">
+            <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
+              <Check size={32} className="text-emerald-600" />
+            </div>
+            <h4 className="text-lg font-bold text-slate-800 mb-2">干预话术已发送</h4>
+            <p className="text-sm text-slate-500 mb-1">沟通消息已成功发送至学生端</p>
+            <p className="text-xs text-slate-400">该预警已标记为「已处理」</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AIDecisionPage() {
-  const { suggestions, decisionLogs, fetchData, submitTeacherDecision } = useStore();
+  const { suggestions, alerts, decisionLogs, fetchData, submitTeacherDecision } = useStore();
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [modifyText, setModifyText] = useState('');
   const [aiFeedback, setAiFeedback] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [handledAlerts, setHandledAlerts] = useState<Set<string>>(new Set());
+
+  // 干预模态框状态
+  const [showInterventionModal, setShowInterventionModal] = useState(false);
+  const [selectedAlert, setSelectedAlert] = useState<{ week: number; type: string; description: string; moduleId?: string; title: string } | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -65,6 +320,26 @@ export default function AIDecisionPage() {
     score >= 0.8 ? 'text-emerald-600' : score >= 0.6 ? 'text-orange-500' : 'text-red-500';
   const confidenceBg = (score: number) =>
     score >= 0.8 ? 'bg-emerald-100' : score >= 0.6 ? 'bg-orange-100' : 'bg-red-100';
+
+  // 打开干预模态框
+  const openInterventionModal = (alert: any) => {
+    setSelectedAlert({
+      week: alert.week,
+      type: alert.type,
+      description: alert.description,
+      moduleId: alert.moduleId,
+      title: alert.title,
+    });
+    setShowInterventionModal(true);
+  };
+
+  // 标记预警为已处理
+  const markAsHandled = (alertId: string) => {
+    setHandledAlerts(prev => new Set(prev).add(alertId));
+  };
+
+  // 高风险预警（severity === 'high' 且未处理）
+  const highRiskAlerts = alerts.filter(a => a.severity === 'high' && !handledAlerts.has(a.id));
 
   return (
     <div className="space-y-6">
@@ -131,6 +406,55 @@ export default function AIDecisionPage() {
           </div>
         </div>
       </div>
+
+      {/* ═══ 高风险预警 + 一键干预 ═══ */}
+      {highRiskAlerts.length > 0 && (
+        <div className="bg-gradient-to-r from-red-50 via-orange-50 to-amber-50 rounded-xl border-2 border-red-200 shadow-sm p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-lg animate-pulse">
+                <AlertTriangle size={20} className="text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-red-800">高风险预警 — 需要立即干预</h3>
+                <p className="text-xs text-red-600 mt-0.5">共 {highRiskAlerts.length} 条未处理的高级别预警</p>
+              </div>
+            </div>
+            <span className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-full font-semibold animate-pulse">
+              紧急
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            {highRiskAlerts.map(alert => (
+              <div key={alert.id} className="bg-white/80 backdrop-blur-sm rounded-xl border border-red-100 p-4 flex items-start gap-4 hover:shadow-md transition-shadow">
+                <div className="flex-shrink-0 mt-0.5">
+                  <div className="w-2 h-2 bg-red-500 rounded-full animate-ping" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-sm font-bold text-red-800">{alert.title}</span>
+                    <span className="text-[10px] px-2 py-0.5 bg-red-100 text-red-700 rounded-full">第 {alert.week} 周</span>
+                    {alert.moduleId && (
+                      <span className="text-[10px] px-2 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                        {alert.moduleId === 'm1' ? '色彩基础' : alert.moduleId === 'm2' ? '造型构图' : alert.moduleId === 'm3' ? '风格探索' : '综合创作'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-600 leading-relaxed">{alert.description}</p>
+                </div>
+                <button
+                  onClick={() => openInterventionModal(alert)}
+                  className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-1.5 shadow-sm"
+                >
+                  <Wand2 size={14} />
+                  一键干预
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* 人机协同工作台 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -451,6 +775,18 @@ export default function AIDecisionPage() {
           )}
         </div>
       </div>
+
+      {/* 一键干预模态框 */}
+      <InterventionModal
+        isOpen={showInterventionModal}
+        onClose={() => {
+          setShowInterventionModal(false);
+          setSelectedAlert(null);
+        }}
+        alert={selectedAlert}
+        suggestions={suggestions}
+        students={[]}
+      />
     </div>
   );
 }
