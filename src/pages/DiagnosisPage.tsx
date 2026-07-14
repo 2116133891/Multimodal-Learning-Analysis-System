@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../hooks/useStore';
 import CardChart from '../components/CardChart';
-import { AlertTriangle, ArrowRight, Monitor, Users, Clock, TrendingDown, BookOpen, Wifi, WifiOff } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Monitor, Users, Clock, TrendingDown, BookOpen, Wifi, WifiOff, Activity, Zap, Database, ArrowDown, BarChart3, GraduationCap } from 'lucide-react';
 
 // ── O2O 混合式教学断点诊断模拟数据 ────────────────────────────
 interface O2OBreakpoint {
@@ -46,6 +46,93 @@ const totalEntered = o2oBreakpoints[0].studentsEntered;
 const totalLost = o2oBreakpoints.reduce((s, bp) => s + bp.studentsExited, 0);
 const totalRetained = o2oBreakpoints[o2oBreakpoints.length - 1].studentsEntered;
 
+// ── O2O 全景数据流配置 ────────────────────────────────────────
+interface O2ODataFlowPhase {
+  label: string;
+  icon: typeof Wifi;
+  gradient: string;
+  bgGradient: string;
+  borderColor: string;
+  badgeBg: string;
+  badgeColor: string;
+  metrics: { label: string; value: string; unit: string; icon: typeof Activity }[];
+  modalities: { label: string; color: string; value: number }[];
+  description: string;
+}
+
+const o2oDataFlows: O2ODataFlowPhase[] = [
+  {
+    label: '课前阶段',
+    icon: Wifi,
+    gradient: 'from-violet-500 to-purple-600',
+    bgGradient: 'bg-gradient-to-br from-violet-50 to-purple-50',
+    borderColor: 'border-violet-200',
+    badgeBg: 'bg-violet-100',
+    badgeColor: 'text-violet-700',
+    description: '线上自主学习阶段 — 视频预习、在线测试、知识摸底',
+    metrics: [
+      { label: '平均预习时长', value: '47', unit: 'min', icon: Clock },
+      { label: '平均测试得分', value: '58', unit: '分', icon: BarChart3 },
+      { label: '视频完播率', value: '52', unit: '%', icon: Activity },
+    ],
+    modalities: [
+      { label: '视频微表情', color: '#8b5cf6', value: 62 },
+      { label: '在线测试', color: '#a78bfa', value: 58 },
+      { label: '登录频次', color: '#c4b5fd', value: 74 },
+    ],
+  },
+  {
+    label: '课中阶段',
+    icon: Users,
+    gradient: 'from-emerald-500 to-teal-600',
+    bgGradient: 'bg-gradient-to-br from-emerald-50 to-teal-50',
+    borderColor: 'border-emerald-200',
+    badgeBg: 'bg-emerald-100',
+    badgeColor: 'text-emerald-700',
+    description: '线下深度互动阶段 — 微表情分析、交互追踪、实操演练',
+    metrics: [
+      { label: '平均参与度', value: '78', unit: '%', icon: Activity },
+      { label: '实操完成率', value: '91', unit: '%', icon: CheckCircle },
+      { label: '小组协作分', value: '72', unit: '分', icon: BarChart3 },
+    ],
+    modalities: [
+      { label: '视频专注度', color: '#10b981', value: 78 },
+      { label: '交互频次', color: '#059669', value: 85 },
+      { label: '实操得分', color: '#6ee7b7', value: 72 },
+    ],
+  },
+  {
+    label: '课后阶段',
+    icon: BookOpen,
+    gradient: 'from-blue-500 to-indigo-600',
+    bgGradient: 'bg-gradient-to-br from-blue-50 to-indigo-50',
+    borderColor: 'border-blue-200',
+    badgeBg: 'bg-blue-100',
+    badgeColor: 'text-blue-700',
+    description: '线上延伸学习阶段 — 讨论区语义分析、作业互评、知识巩固',
+    metrics: [
+      { label: '讨论发帖量', value: '127', unit: '条', icon: Database },
+      { label: '语义情感分', value: '0.68', unit: '', icon: Activity },
+      { label: '互评完成率', value: '76', unit: '%', icon: BarChart3 },
+    ],
+    modalities: [
+      { label: '文本情感', color: '#3b82f6', value: 68 },
+      { label: '讨论活跃', color: '#2563eb', value: 74 },
+      { label: '作业互评', color: '#60a5fa', value: 76 },
+    ],
+  },
+];
+
+// 检查圈图标（用于课中阶段）
+function CheckCircle(props: { size?: number; className?: string }) {
+  return (
+    <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </svg>
+  );
+}
+
 export default function DiagnosisPage() {
   const { records, alerts, fetchData } = useStore();
   const [activeTab, setActiveTab] = useState<'alerts' | 'o2o'>('alerts');
@@ -79,6 +166,154 @@ export default function DiagnosisPage() {
       <div>
         <h2 className="text-2xl font-bold text-slate-800">动态诊断</h2>
         <p className="text-sm text-slate-500 mt-1">基于多模态学习分析的课程动态诊断 — 从"结果评价"向"过程诊断"转变</p>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════════
+          O2O 混合式教学多模态数据全景流转视图
+          ═══════════════════════════════════════════════════════════ */}
+      <div className="relative overflow-hidden rounded-2xl border border-slate-200 shadow-sm">
+        {/* 顶部装饰渐变条 */}
+        <div className="h-1 bg-gradient-to-r from-violet-500 via-emerald-500 to-blue-500" />
+
+        {/* 标题区 */}
+        <div className="px-6 py-4 bg-gradient-to-r from-slate-50 via-white to-slate-50 border-b border-slate-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gradient-to-br from-violet-500 to-blue-600 rounded-xl shadow-sm">
+                <Zap size={18} className="text-white" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-800">O2O 混合式教学多模态数据全景流转</h3>
+                <p className="text-xs text-slate-500 mt-0.5">课前线上 → 课中线下 → 课后线上 · 三阶段多模态数据融合追踪</p>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+              <span className="px-2 py-1 bg-slate-100 rounded-md">3 阶段</span>
+              <span className="px-2 py-1 bg-slate-100 rounded-md">9 模态指标</span>
+              <span className="px-2 py-1 bg-slate-100 rounded-md">42 名学生</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 三阶段数据流卡片 */}
+        <div className="p-6">
+          <div className="flex items-stretch gap-0">
+            {o2oDataFlows.map((phase, idx) => {
+              const Icon = phase.icon;
+              const bp = o2oBreakpoints[idx];
+              const retentionRate = Math.round(((bp.studentsEntered - bp.studentsExited) / bp.studentsEntered) * 100);
+
+              return (
+                <div key={idx} className="flex-1">
+                  {/* 阶段卡片 */}
+                  <div className={`rounded-xl border-2 ${phase.borderColor} ${phase.bgGradient} p-5 h-full flex flex-col relative overflow-hidden`}>
+                    {/* 背景装饰 */}
+                    <div className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br ${phase.gradient} opacity-5 rounded-full -translate-y-6 translate-x-6`} />
+
+                    {/* 阶段头部 */}
+                    <div className="flex items-center gap-2 mb-4 relative">
+                      <div className={`p-2 bg-white rounded-lg shadow-sm border ${phase.borderColor}`}>
+                        <Icon size={16} className={`text-transparent bg-clip-text bg-gradient-to-r ${phase.gradient}`} />
+                      </div>
+                      <div>
+                        <span className={`text-xs px-2 py-0.5 ${phase.badgeBg} ${phase.badgeColor} rounded-full font-medium`}>
+                          阶段 {idx + 1}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h4 className="text-lg font-bold text-slate-800 mb-1">{phase.label}</h4>
+                    <p className="text-xs text-slate-500 mb-4 leading-relaxed">{phase.description}</p>
+
+                    {/* 关键指标 */}
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {phase.metrics.map((m, mi) => (
+                        <div key={mi} className="bg-white/80 backdrop-blur-sm rounded-lg p-2.5 border border-slate-100 text-center">
+                          <div className="flex items-center justify-center gap-1 mb-1">
+                            <m.icon size={10} className="text-slate-400" />
+                          </div>
+                          <p className="text-base font-bold text-slate-800">{m.value}{m.unit ? <span className="text-xs font-normal text-slate-400">{m.unit}</span> : ''}</p>
+                          <p className="text-[10px] text-slate-400 mt-0.5 leading-tight">{m.label}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 模态数据进度条 */}
+                    <div className="space-y-2.5 mb-4 flex-1">
+                      {phase.modalities.map((mod, mi) => (
+                        <div key={mi}>
+                          <div className="flex items-center justify-between text-xs mb-1">
+                            <span className="text-slate-500">{mod.label}</span>
+                            <span className="font-semibold text-slate-700">{mod.value}%</span>
+                          </div>
+                          <div className="w-full bg-white/60 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full bg-gradient-to-r ${phase.gradient} transition-all duration-1000`}
+                              style={{ width: `${mod.value}%` }}
+                            />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* 留存率标签 */}
+                    <div className="pt-3 border-t border-slate-200/60">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">留存率</span>
+                        <span className={`font-bold text-transparent bg-clip-text bg-gradient-to-r ${phase.gradient}`}>
+                          {retentionRate}%
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 阶段间箭头连接器 */}
+                  {idx < o2oDataFlows.length - 1 && (
+                    <div className="flex items-center justify-center w-10 flex-shrink-0 -mx-1 z-10 relative">
+                      <div className="flex flex-col items-center">
+                        <ArrowDown size={16} className="text-slate-300" />
+                        <div className="w-px h-3 bg-slate-300" />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 底部总览统计 */}
+          <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-4">
+            <div className="flex items-center gap-6">
+              <div className="text-center">
+                <p className="text-xs text-slate-400">全程参与</p>
+                <p className="text-lg font-bold text-slate-800">{totalEntered}<span className="text-xs text-slate-400">人</span></p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-slate-400">最终留存</p>
+                <p className="text-lg font-bold text-emerald-600">{totalRetained}<span className="text-xs text-slate-400">人</span></p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-slate-400">总流失</p>
+                <p className="text-lg font-bold text-red-500">-{totalLost}<span className="text-xs text-slate-400">人</span></p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-slate-400">最大流失断点</p>
+              <p className="text-sm font-bold text-indigo-600">
+                {o2oBreakpoints.reduce((max, bp) =>
+                  (bp.studentsExited / bp.studentsEntered) >
+                  (max.studentsExited / max.studentsEntered) ? bp : max
+                , o2oBreakpoints[0]).phase}
+                <span className="text-xs text-slate-400 ml-1">
+                  （{Math.round((o2oBreakpoints.reduce((max, bp) =>
+                    (bp.studentsExited / bp.studentsEntered) >
+                    (max.studentsExited / max.studentsEntered) ? bp : max
+                  , o2oBreakpoints[0]).studentsExited / o2oBreakpoints[0].studentsEntered * 100))}%）
+                </span>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* 告警面板 */}
