@@ -14,7 +14,6 @@ interface AppState {
   students: Student[];
   records: LearningRecord[];
   vitalityScores: VitalityScore[];
-  suggestions: OptimizationSuggestion[];
   alerts: DiagnosticAlert[];
   dataQuality: DataQualityMetrics | null;
   weeklyAggregates: any[];
@@ -22,7 +21,10 @@ interface AppState {
   studentProfiles: StudentMultimodalProfile[];
   interventions: InterventionEffectiveness[];
 
-  // 教师决策日志
+  // AI 建议统一列表（单一数据源）
+  suggestions: OptimizationSuggestion[];
+
+  // 决策日志
   decisionLogs: TeacherDecisionLog[];
 
   // 加载状态
@@ -31,58 +33,133 @@ interface AppState {
 
   // 操作
   fetchData: () => Promise<void>;
-  refreshSuggestions: () => Promise<void>;
-  submitTeacherDecision: (suggestionId: string, action: string, decision?: string, rejectReason?: string, feedback?: string) => Promise<void>;
+  submitTeacherDecision: (
+    suggestionId: string,
+    action: 'approve' | 'reject' | 'modify',
+    teacherDecision?: string,
+    rejectReason?: string,
+    feedbackToAI?: string
+  ) => Promise<void>;
 }
 
 export const useStore = create<AppState>((set, get) => ({
-  courseInfo: null, students: [], records: [], vitalityScores: [], suggestions: [],
-  alerts: [], dataQuality: null, weeklyAggregates: [],
-  multimodalFeatures: [], studentProfiles: [], interventions: [],
-  decisionLogs: [], loading: false, error: null,
+  // 基础数据
+  courseInfo: null,
+  students: [],
+  records: [],
+  vitalityScores: [],
+  alerts: [],
+  dataQuality: null,
+  weeklyAggregates: [],
+  multimodalFeatures: [],
+  studentProfiles: [],
+  interventions: [],
+
+  // AI 建议 & 决策日志
+  suggestions: [],
+  decisionLogs: [],
+  loading: false,
+  error: null,
 
   fetchData: async () => {
     set({ loading: true, error: null });
     try {
-      const [courseInfo, students, records, vitalityScores, suggestions, alerts, dataQuality, weeklyAggregates, multimodalFeatures] = await Promise.all([
-        api.getCourse(), api.getStudents(), api.getRecords(), api.getVitalityScores(),
-        api.getSuggestions(), api.getAlerts(), api.getDataQuality(),
-        api.getWeeklyAggregates(), api.getMultimodalFeatures(),
-        // 学生画像和干预数据从本地生成（不需要API）
-        [] as any[], [] as any[]
+      const [
+        courseInfo,
+        students,
+        records,
+        vitalityScores,
+        alerts,
+        dataQuality,
+        weeklyAggregates,
+        multimodalFeatures,
+      ] = await Promise.all([
+        api.getCourse(),
+        api.getStudents(),
+        api.getRecords(),
+        api.getVitalityScores(),
+        api.getAlerts(),
+        api.getDataQuality(),
+        api.getWeeklyAggregates(),
+        api.getMultimodalFeatures(),
       ]);
-      set({ courseInfo, students, records, vitalityScores, suggestions, alerts, dataQuality, weeklyAggregates, multimodalFeatures, loading: false });
+      set({
+        courseInfo,
+        students,
+        records,
+        vitalityScores,
+        alerts,
+        dataQuality,
+        weeklyAggregates,
+        multimodalFeatures,
+      });
+
+      // 加载 AI 建议
+      const allSuggestions = await api.getSuggestions();
+      set({ suggestions: allSuggestions, loading: false });
     } catch (e) {
       set({ error: (e as Error).message, loading: false });
     }
   },
 
-  refreshSuggestions: async () => {
-    try {
-      const suggestions = await api.getSuggestions();
-      set({ suggestions });
-    } catch (e) {
-      console.error('刷新建议失败:', e);
-    }
-  },
+  submitTeacherDecision: async (
+    suggestionId: string,
+    action: 'approve' | 'reject' | 'modify',
+    teacherDecision?: string,
+    rejectReason?: string,
+    feedbackToAI?: string
+  ) => {
+    const { suggestions, decisionLogs } = get();
+    const suggestion = suggestions.find(s => s.id === suggestionId);
+    if (!suggestion) return;
 
-  submitTeacherDecision: async (suggestionId: string, action: string, decision?: string, rejectReason?: string, feedback?: string) => {
+    // 映射 action → status
+    const statusMap: Record<string, string> = {
+      approve: 'accepted',
+      reject: 'rejected',
+      modify: 'modified',
+    };
+    const status = statusMap[action];
+
     try {
-      const status = action === 'approve' ? 'accepted' : action === 'reject' ? 'rejected' : 'modified';
-      await api.submitDecision(suggestionId, status, decision, rejectReason, feedback);
-      // 记录决策日志
-      const log: TeacherDecisionLog = {
-        id: `log_${Date.now()}`,
-        suggestionId,
-        action: action as TeacherDecisionLog['action'],
-        rejectReason: rejectReason as any,
-        modification: action === 'modify' ? decision : undefined,
-        feedbackToAI: feedback,
-        timestamp: new Date().toISOString(),
-      };
-      set({ decisionLogs: [...get().decisionLogs, log] });
+      await api.submitDecision(suggestionId, status, teacherDecision, rejectReason, feedbackToAI);
     } catch (e) {
-      console.error('提交决策失败:', e);
+      console.warn('后端决策接口不可用，使用本地模式:', e);
     }
+
+    // 更新 suggestion 的 status
+    const updatedSuggestions = suggestions.map(s => {
+      if (s.id === suggestionId) {
+        return {
+          ...s,
+          status: status as 'accepted' | 'rejected' | 'modified',
+          teacherDecision: teacherDecision || s.teacherDecision,
+          rejectReason: (rejectReason || s.rejectReason) as any,
+        };
+      }
+      return s;
+    });
+
+    // 生成决策日志
+    const newLog: TeacherDecisionLog = {
+      id: `log_${Date.now()}`,
+      suggestionId,
+      action,
+      timestamp: new Date().toISOString(),
+    };
+    if (action === 'reject') {
+      (newLog as any).rejectReason = rejectReason;
+    }
+    if (action === 'modify') {
+      (newLog as any).modification = teacherDecision;
+    }
+    if (feedbackToAI) {
+      newLog.feedbackToAI = feedbackToAI;
+    }
+
+    set({
+      suggestions: updatedSuggestions,
+      decisionLogs: [...decisionLogs, newLog],
+    });
   },
 }));
