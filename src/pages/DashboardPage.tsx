@@ -567,8 +567,7 @@ export default function DashboardPage() {
           </div>
           <div
             ref={scrollRef}
-            className="flex-1 overflow-y-auto p-4 space-y-2"
-            style={{ maxHeight: '480px' }}
+            className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0"
           >
             {liveLogs.length === 0 && (
               <div className="text-center py-10">

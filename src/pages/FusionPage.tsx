@@ -249,6 +249,7 @@ export default function FusionPage() {
 
       {/* ── 45 分钟课堂多模态时序对齐 ──────────────────── */}
       <RechartsCard
+        key={`timeline-${selectedStudent}-${selectedWeek}`}
         title="45 分钟课堂多模态数据时序对齐"
         toolbar={
           <div className="flex items-center gap-4 text-xs">
