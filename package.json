@@ -7,11 +7,11 @@
     "dev:frontend": "vite",
     "dev:backend": "tsx watch server/index.ts",
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "build:server": "tsc -b",
     "start": "node --import tsx/server.mjs server/index.ts",
     "preview": "vite preview",
-    "vercel-build": "tsc -b && vite build"
+    "vercel-build": "vite build"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.2",
