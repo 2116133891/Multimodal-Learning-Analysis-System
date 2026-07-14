@@ -106,10 +106,14 @@ export function generateMockRecords(): LearningRecord[] {
       });
     }
 
-    // outcome (weeks 4, 8, 12, 16)
-    [4, 8, 12, 16].forEach(week => {
-      const examScore = Math.floor(rand() * 35) + 55;
-      const projectScore = Math.floor(rand() * 30) + 60;
+    // outcome — 每周都有，模拟随课程深入成绩逐步提升
+    for (let week = 1; week <= 16; week++) {
+      // 学习趋势：前期 10-30 分波动，后期 30-50 分波动
+      const trendOffset = Math.floor((week - 1) / 16 * 20); // 第1周偏移0，第16周偏移~19
+      const examScore = Math.floor(rand() * (20 + trendOffset)) + 10 + trendOffset;
+      const projectScore = Math.floor(rand() * (20 + trendOffset)) + 10 + trendOffset;
+      const clampedExam = Math.min(100, Math.max(0, examScore));
+      const clampedProject = Math.min(100, Math.max(0, projectScore));
 
       records.push({
         id: `o${String(id++).padStart(4, '0')}`,
@@ -117,12 +121,12 @@ export function generateMockRecords(): LearningRecord[] {
         studentId: student.id,
         moduleId: week <= 4 ? 'm1' : week <= 8 ? 'm2' : week <= 12 ? 'm3' : 'm4',
         week,
-        timestamp: `2025-0${[1, 2, 3, 4][[4, 8, 12, 16].indexOf(week)]}-25T16:00:00Z`,
-        value: Math.floor((examScore + projectScore) / 2),
-        rawValue: JSON.stringify({ examScore, projectScore }),
+        timestamp: `2025-0${Math.min(12, Math.ceil(week / 4))}-25T16:00:00Z`,
+        value: Math.floor((clampedExam + clampedProject) / 2),
+        rawValue: JSON.stringify({ examScore: clampedExam, projectScore: clampedProject }),
         metadata: { source: '考试系统' },
       });
-    });
+    }
   }
 
   // evaluation (every 2 weeks)
