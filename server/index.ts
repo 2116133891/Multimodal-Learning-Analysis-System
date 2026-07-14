@@ -1,4 +1,4 @@
-// ===== 服务器入口 =====
+// ===== 服务器入口（开发 + 生产 Vercel Serverless 兼容） =====
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -24,6 +24,8 @@ import {
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// ── API Routes ──────────────────────────────────────────────
 
 app.get('/api/course', (_req, res) => res.json(courseInfo));
 app.get('/api/students', (_req, res) => res.json(students));
@@ -159,14 +161,13 @@ app.get('/api/multimodal/time-series', (req, res) => {
   res.json(data);
 });
 
-// 多模态时序融合得分（直接返回融合后的 engagement 序列）
+// 多模态时序融合得分
 app.get('/api/multimodal/fusion-score', (req, res) => {
   const { studentId, week } = req.query;
   let data = getAllMultimodalTimeSeries();
   if (studentId) data = data.filter(d => d.studentId === studentId);
   if (week) data = data.filter(d => d.week === Number(week));
 
-  // 返回精简格式：时间戳 + 融合得分 + 摘要
   const result = data.map(d => ({
     studentId: d.studentId,
     week: d.week,
@@ -185,8 +186,29 @@ app.get('/api/multimodal/fusion-score', (req, res) => {
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-const staticPath = path.join(__dirname, '../dist');
-app.use(express.static(staticPath));
+// ── 生产环境静态资源托管 ─────────────────────────────────────
+// Vercel Serverless 环境下没有 express.static，静态文件由 Vercel 自身处理。
+// 仅在本地生产模式（NODE_ENV=production 且非 Vercel）下启用。
+if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
+  const staticPath = path.join(__dirname, '../dist');
+  app.use(express.static(staticPath));
 
-const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => { console.log(`服务器运行在 http://localhost:${PORT}`); });
+  // SPA fallback：所有非 /api 请求返回 index.html
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+}
+
+// ── 导出（Vercel Serverless 入口）────────────────────────────
+// Vercel 要求导出 app 对象，而非调用 app.listen()。
+// 本地开发时（无 VERCEL 环境变量），走传统 listen 模式。
+if (process.env.VERCEL) {
+  // Serverless 模式：只导出，不调用 listen
+  export default app;
+} else {
+  // 本地开发 / Docker 模式
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => {
+    console.log(`服务器运行在 http://localhost:${PORT}`);
+  });
+}

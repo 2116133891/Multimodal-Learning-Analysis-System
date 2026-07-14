@@ -710,6 +710,63 @@ export function generateSuggestions(): OptimizationSuggestion[] {
       status: 'pending',
       createdAt: '2025-05-22T10:00:00Z',
     },
+    // ── O2O 混合式教学场景建议 ──────────────────────────────
+    {
+      id: 'sug8', moduleId: 'm1', week: 3, category: 'rhythm', priority: 'high',
+      title: '线上视频第3章出现大面积困惑表情，建议线下课堂增加 15 分钟实操演示',
+      description: '线上视频学习分析显示：第 3 章"色彩三要素"视频段（12:00-18:00）学生困惑（confused）表情占比高达 42%，远高于全课程均值 12%。同时讨论区"配色""色相环"相关提问量激增 3 倍。建议在下一讲线下课堂针对该知识点增加 15 分钟调色板实操演示，帮助学生跨越认知障碍。',
+      dataEvidence: [
+        '线上视频困惑表情占比 42%（课程均值 12%）',
+        '讨论区"配色"提问量 +300%',
+        '线上章节测验平均分仅 58 分（目标 ≥75）',
+      ],
+      confidenceScore: 0.93,
+      attributionAnalysis: {
+        primaryFactor: '线上视频缺乏即时互动反馈，学生在抽象色彩概念处产生认知滞留',
+        contributingFactors: ['视频讲解速度过快（1.5x 加速播放率 38%）', '缺少随堂即时测验', '线下课堂距离线上视频间隔 3 天，记忆衰减'],
+        modalityContributions: { video_emotion: 0.45, text_semantic: 0.25, interaction_behavior: 0.2, traditional_data: 0.1 },
+      },
+      status: 'accepted',
+      teacherDecision: '采纳。在第 4 周线下课堂增加了 15 分钟色彩调配实操环节，效果显著。',
+      createdAt: '2025-02-22T10:00:00Z',
+    },
+    {
+      id: 'sug9', moduleId: 'm2', week: 6, category: 'task', priority: 'high',
+      title: '根据线上讨论区语义分析，建议线下翻转课堂重新分组',
+      description: '线上讨论区文本语义聚类分析发现：A 同学（张明）和 B 同学（李华）在"透视基础"话题下的发言语义相似度达 0.78（同属初级水平），且两人均表示"理解有困难"。建议在第 7 周线下翻转课堂中将两人分入同一小组，由高水平学生（陈静，语义相似度仅 0.23，属高级水平）担任组长，形成"强带弱"的异质分组模式。',
+      dataEvidence: [
+        '张明 & 李华语义相似度 0.78（同水平层级）',
+        '陈静为"透视基础"模块最高分学生（95 分）',
+        '当前同质分组导致小组产出效率下降 35%',
+      ],
+      confidenceScore: 0.88,
+      attributionAnalysis: {
+        primaryFactor: '当前小组为随机分配，未考虑学生能力差异与互补性',
+        contributingFactors: ['翻转课堂前缺乏学情摸底', '线上-线下分组数据未打通', '缺少智能分组算法'],
+        modalityContributions: { video_emotion: 0.1, text_semantic: 0.45, interaction_behavior: 0.25, traditional_data: 0.2 },
+      },
+      status: 'accepted',
+      teacherDecision: '采纳。第 7 周采用异质分组后，小组任务完成时间缩短 40%。',
+      createdAt: '2025-03-22T10:00:00Z',
+    },
+    {
+      id: 'sug10', moduleId: 'm3', week: 10, category: 'resource', priority: 'medium',
+      title: '线上预习数据异常：第 10 周课前测验通过率仅 35%，线下需调整授课节奏',
+      description: '线上智慧教学平台数据显示：第 10 周"风格探索"模块课前测验通过率仅 35%（历史均值 72%）。视频完播率从第 9 周的 88% 骤降至 52%，且大量学生在"后印象派"视频段落（22:00-30:00）出现徘徊回放行为（replay rate 67%）。强烈建议线下课堂将原定讲授缩减为 20 分钟，增加 25 分钟风格临摹练习，以"做中学"弥补线上知识获取不足。',
+      dataEvidence: [
+        '课前测验通过率 35%（历史均值 72%）',
+        '视频完播率骤降：88% → 52%',
+        '"后印象派"段落重播率 67%',
+      ],
+      confidenceScore: 0.85,
+      attributionAnalysis: {
+        primaryFactor: '线上预习质量严重不足，线下课堂需从"讲授型"转为"实践型"',
+        contributingFactors: ['后印象派概念抽象度高', '线上视频缺乏案例对比', '学生缺乏艺术史背景知识'],
+        modalityContributions: { video_emotion: 0.3, text_semantic: 0.2, interaction_behavior: 0.35, traditional_data: 0.15 },
+      },
+      status: 'pending',
+      createdAt: '2025-04-22T10:00:00Z',
+    },
   ];
 }
 
@@ -723,6 +780,10 @@ export function generateAlerts(): DiagnosticAlert[] {
     { id: 'a4', week: 10, type: 'anomaly', severity: 'medium', title: '讨论区发帖量异常激增', description: '第10周讨论区发帖量较前两周增长40%，文本情感分析显示积极情绪占比达78%。', moduleId: 'm3' },
     { id: 'a5', week: 14, type: 'low_engagement', severity: 'medium', title: '创作阶段迷茫感', description: '第14周综合创作初期，学生平均参与度仅58分，文本分析显示"迷茫"关键词出现频率增加3倍。', moduleId: 'm4' },
     { id: 'a6', week: 15, type: 'knowledge_gap', severity: 'low', title: '作品评价标准理解偏差', description: '第15周教师评价中发现部分学生对作品评价标准理解不一致。', moduleId: 'm4' },
+    // ── O2O 混合式教学场景告警 ──────────────────────────────
+    { id: 'a7', week: 3, type: 'anomaly', severity: 'high', title: '线上→线下知识断层预警', description: '线上视频第3章"色彩三要素"困惑表情占比42%（均值12%），课前测验通过率仅35%。线上知识获取严重不足，预计线下课堂将出现大面积理解障碍。建议线下教学立即调整为"实操补救"模式。', moduleId: 'm1' },
+    { id: 'a8', week: 6, type: 'performance_drop', severity: 'medium', title: '翻转课堂分组效率预警', description: '线上讨论区语义聚类显示当前小组存在严重同质化（组内语义相似度均值0.71），导致小组任务产出效率下降35%。建议线下翻转课堂重新采用异质分组。', moduleId: 'm2' },
+    { id: 'a9', week: 10, type: 'low_engagement', severity: 'high', title: '线上预习严重不足，线下需转型', description: '第10周线上视频完播率从88%骤降至52%，"后印象派"段落重播率67%。线上预习质量不足以支撑线下讲授，建议线下课堂转为实践主导模式。', moduleId: 'm3' },
   ];
 }
 
