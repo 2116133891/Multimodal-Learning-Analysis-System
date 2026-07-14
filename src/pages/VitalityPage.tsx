@@ -19,8 +19,25 @@ export default function VitalityPage() {
     );
   }
 
-  const latest = vitalityScores[vitalityScores.length - 1];
-  const first = vitalityScores[0];
+  // 安全校验：防止 undefined 导致 ECharts 崩溃
+  const scores = vitalityScores || [];
+  const latest = scores[scores.length - 1];
+  const first = scores[0];
+
+  // 无数据时显示空状态
+  if (!latest || !first) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">课程生命力</h2>
+          <p className="text-sm text-slate-500 mt-1">面向课程生命力提升的持续改进 — 五维评估与可视化</p>
+        </div>
+        <div className="flex items-center justify-center h-64">
+          <p className="text-sm text-slate-400">暂无数据，请先在「数据采集」页面生成模拟数据</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -115,17 +132,17 @@ export default function VitalityPage() {
           legend: { data: ['总体', '课堂活力', '创造力', '学习感知', '资源延续', '课程进化'], bottom: 0 },
           xAxis: {
             type: 'category' as const,
-            data: vitalityScores.map(v => `W${v.week}`),
+            data: scores.map(v => `W${v.week}`),
             axisLabel: { rotate: 45 },
           },
           yAxis: { type: 'value' as const, min: 0, max: 100, axisLabel: { formatter: '{value}分' } },
           series: [
-            { name: '总体', type: 'line', data: vitalityScores.map(v => v.overall), smooth: true, lineStyle: { width: 3 }, itemStyle: { color: '#3b82f6' }, areaStyle: { opacity: 0.1 } },
-            { name: '课堂活力', type: 'line', data: vitalityScores.map(v => v.classroomVitality), smooth: true, itemStyle: { color: '#10b981' } },
-            { name: '创造力', type: 'line', data: vitalityScores.map(v => v.creativity), smooth: true, itemStyle: { color: '#f59e0b' } },
-            { name: '学习感知', type: 'line', data: vitalityScores.map(v => v.learningPerception), smooth: true, itemStyle: { color: '#6366f1' } },
-            { name: '资源延续', type: 'line', data: vitalityScores.map(v => v.resourceExtension), smooth: true, itemStyle: { color: '#ec4899' } },
-            { name: '课程进化', type: 'line', data: vitalityScores.map(v => v.courseEvolution), smooth: true, itemStyle: { color: '#8b5cf6' } },
+            { name: '总体', type: 'line', data: scores.map(v => v.overall), smooth: true, lineStyle: { width: 3 }, itemStyle: { color: '#3b82f6' }, areaStyle: { opacity: 0.1 } },
+            { name: '课堂活力', type: 'line', data: scores.map(v => v.classroomVitality), smooth: true, itemStyle: { color: '#10b981' } },
+            { name: '创造力', type: 'line', data: scores.map(v => v.creativity), smooth: true, itemStyle: { color: '#f59e0b' } },
+            { name: '学习感知', type: 'line', data: scores.map(v => v.learningPerception), smooth: true, itemStyle: { color: '#6366f1' } },
+            { name: '资源延续', type: 'line', data: scores.map(v => v.resourceExtension), smooth: true, itemStyle: { color: '#ec4899' } },
+            { name: '课程进化', type: 'line', data: scores.map(v => v.courseEvolution), smooth: true, itemStyle: { color: '#8b5cf6' } },
           ],
           grid: { left: 60, right: 20, top: 20, bottom: 60 },
         }}

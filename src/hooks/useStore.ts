@@ -7,6 +7,9 @@ import type {
   MultimodalFeatureVector, StudentMultimodalProfile, InterventionEffectiveness,
   TeacherDecisionLog,
 } from '../types';
+import {
+  generateMockStudentProfiles,
+} from '../data/mockData';
 
 interface AppState {
   // 基础数据
@@ -73,6 +76,8 @@ export const useStore = create<AppState>((set, get) => ({
         dataQuality,
         weeklyAggregates,
         multimodalFeatures,
+        suggestions,
+        interventions,
       ] = await Promise.all([
         api.getCourse(),
         api.getStudents(),
@@ -82,7 +87,13 @@ export const useStore = create<AppState>((set, get) => ({
         api.getDataQuality(),
         api.getWeeklyAggregates(),
         api.getMultimodalFeatures(),
+        api.getSuggestions(),
+        api.getInterventions(),
       ]);
+
+      // 生成本地 studentProfiles（API 无对应端点，使用 Mock 数据）
+      const studentProfiles = generateMockStudentProfiles();
+
       set({
         courseInfo,
         students,
@@ -92,11 +103,11 @@ export const useStore = create<AppState>((set, get) => ({
         dataQuality,
         weeklyAggregates,
         multimodalFeatures,
+        suggestions,
+        studentProfiles,
+        interventions,
+        loading: false,
       });
-
-      // 加载 AI 建议
-      const allSuggestions = await api.getSuggestions();
-      set({ suggestions: allSuggestions, loading: false });
     } catch (e) {
       set({ error: (e as Error).message, loading: false });
     }

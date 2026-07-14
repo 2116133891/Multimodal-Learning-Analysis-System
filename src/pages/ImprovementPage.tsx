@@ -28,10 +28,15 @@ export default function ImprovementPage() {
     );
   }
 
+  // 安全校验：防止 undefined 导致崩溃
+  const scores = vitalityScores || [];
+  const suggs = suggestions || [];
+  const recs = records || [];
+
   // 按阶段统计
-  const accepted = suggestions.filter(s => s.status === 'accepted').length;
-  const rejected = suggestions.filter(s => s.status === 'rejected').length;
-  const modified = suggestions.filter(s => s.status === 'modified').length;
+  const accepted = suggs.filter(s => s.status === 'accepted').length;
+  const rejected = suggs.filter(s => s.status === 'rejected').length;
+  const modified = suggs.filter(s => s.status === 'modified').length;
 
   return (
     <div className="space-y-6">
@@ -79,50 +84,56 @@ export default function ImprovementPage() {
           <p className="text-sm text-slate-500 mt-1">修改后采纳</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 text-center">
-          <p className="text-3xl font-bold text-purple-600">{records.length}</p>
+          <p className="text-3xl font-bold text-purple-600">{recs.length}</p>
           <p className="text-sm text-slate-500 mt-1">总数据记录</p>
         </div>
       </div>
 
       {/* 生命力改进效果对比 */}
-      <CardChart
-        title="生命力改进效果对比（期初 vs 期末）"
-        option={{
-          tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
-          legend: { data: ['期初', '期末'], bottom: 0 },
-          xAxis: {
-            type: 'category' as const,
-            data: ['课堂活力', '创造力培养', '学习感知', '资源延续', '课程进化'],
-          },
-          yAxis: { type: 'value' as const, min: 0, max: 100, axisLabel: { formatter: '{value}分' } },
-          series: [
-            {
-              name: '期初', type: 'bar' as const, barGap: '0',
-              data: vitalityScores.map(v => [v.classroomVitality, v.creativity, v.learningPerception, v.resourceExtension, v.courseEvolution])[0],
-              itemStyle: { color: '#94a3b8', borderRadius: [4, 4, 0, 0] },
+      {scores.length > 0 ? (
+        <CardChart
+          title="生命力改进效果对比（期初 vs 期末）"
+          option={{
+            tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
+            legend: { data: ['期初', '期末'], bottom: 0 },
+            xAxis: {
+              type: 'category' as const,
+              data: ['课堂活力', '创造力培养', '学习感知', '资源延续', '课程进化'],
             },
-            {
-              name: '期末', type: 'bar' as const,
-              data: [
-                vitalityScores[vitalityScores.length - 1].classroomVitality,
-                vitalityScores[vitalityScores.length - 1].creativity,
-                vitalityScores[vitalityScores.length - 1].learningPerception,
-                vitalityScores[vitalityScores.length - 1].resourceExtension,
-                vitalityScores[vitalityScores.length - 1].courseEvolution,
-              ],
-              itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
-            },
-          ],
-          grid: { left: 60, right: 20, top: 20, bottom: 60 },
-        }}
-        height={300}
-      />
+            yAxis: { type: 'value' as const, min: 0, max: 100, axisLabel: { formatter: '{value}分' } },
+            series: [
+              {
+                name: '期初', type: 'bar' as const, barGap: '0',
+                data: [scores[0].classroomVitality, scores[0].creativity, scores[0].learningPerception, scores[0].resourceExtension, scores[0].courseEvolution],
+                itemStyle: { color: '#94a3b8', borderRadius: [4, 4, 0, 0] },
+              },
+              {
+                name: '期末', type: 'bar' as const,
+                data: [
+                  scores[scores.length - 1].classroomVitality,
+                  scores[scores.length - 1].creativity,
+                  scores[scores.length - 1].learningPerception,
+                  scores[scores.length - 1].resourceExtension,
+                  scores[scores.length - 1].courseEvolution,
+                ],
+                itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
+              },
+            ],
+            grid: { left: 60, right: 20, top: 20, bottom: 60 },
+          }}
+          height={300}
+        />
+      ) : (
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-10 flex items-center justify-center">
+          <p className="text-sm text-slate-400">暂无生命力数据</p>
+        </div>
+      )}
 
       {/* 改进时间线 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
         <h3 className="text-base font-semibold text-slate-800 mb-4">优化历史时间线</h3>
         <div className="space-y-4">
-          {suggestions.filter(s => s.status !== 'pending').map(sug => (
+          {suggs.filter(s => s.status !== 'pending').map(sug => (
             <div key={sug.id} className="flex items-start gap-4">
               <div className="flex flex-col items-center">
                 <div className={`w-3 h-3 rounded-full ${
@@ -148,6 +159,9 @@ export default function ImprovementPage() {
               </div>
             </div>
           ))}
+          {suggs.filter(s => s.status !== 'pending').length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-4">暂无改进记录</p>
+          )}
         </div>
       </div>
     </div>
