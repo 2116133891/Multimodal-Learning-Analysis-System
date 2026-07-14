@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
 import CollectionPage from './pages/CollectionPage';
@@ -9,10 +9,12 @@ import VitalityPage from './pages/VitalityPage';
 import ImprovementPage from './pages/ImprovementPage';
 import StudentProfilePage from './pages/StudentProfilePage';
 import EfficacyEvalPage from './pages/EfficacyEvalPage';
+import { ToastProvider } from './components/ToastManager';
+import RealtimeAlertTimer from './components/RealtimeAlertTimer';
 
 type Page = 'dashboard' | 'collection' | 'fusion' | 'diagnosis' | 'ai' | 'vitality' | 'improvement' | 'profile' | 'efficacy';
 
-function App() {
+function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
 
   useEffect(() => {
@@ -40,6 +42,15 @@ function App() {
     <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
       {renderPage()}
     </Layout>
+  );
+}
+
+function App() {
+  return (
+    <ToastProvider>
+      <RealtimeAlertTimer />
+      <AppContent />
+    </ToastProvider>
   );
 }
 
