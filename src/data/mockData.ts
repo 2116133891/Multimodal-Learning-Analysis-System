@@ -6,6 +6,7 @@ import type {
   MultimodalFeatureVector, ModalityFeature,
   StudentMultimodalProfile, InterventionEffectiveness,
   StudentMultimodalTimeSeries,
+  CourseProfileSnapshot, TeachingState, ResourceUtilization, InteractionMethod,
 } from '../types';
 
 // ===================== 课程信息 =====================
@@ -618,6 +619,205 @@ function hashString(str: string): number {
   return Math.abs(hash);
 }
 
+// ===================== 课程画像数据（Course Profile）=====================
+
+/**
+ * 生成 16 周课程画像快照
+ * 包含教师教学状态、课程平台资源、互动方式与教学方法三个维度
+ */
+export function generateMockCourseProfiles(): CourseProfileSnapshot[] {
+  const snapshots: CourseProfileSnapshot[] = [];
+  const rand = seededRandom(2025);
+
+  for (let week = 1; week <= 16; week++) {
+    // 教学状态 — 随课程深入逐步改善
+    const teachingPace = Math.min(100, Math.max(50, 55 + week * 2.2 + rand() * 10));
+    const emotionalEngagement = Math.min(100, Math.max(50, 50 + week * 2.5 + rand() * 12));
+    const movementFrequency = Math.min(30, Math.max(5, 12 + Math.floor(rand() * 8) + (week > 8 ? 3 : 0)));
+    const eyeContactRate = Math.min(100, Math.max(40, 45 + week * 2 + rand() * 10));
+    const questionRate = Math.min(25, Math.max(5, 8 + Math.floor(rand() * 6) + (week > 6 ? 2 : 0)));
+    const lectureRatio = Math.max(30, 70 - week * 1.5 + rand() * 5);
+    const pacingVariation = Math.min(100, Math.max(30, 40 + week * 2.5 + rand() * 15));
+
+    const teachingState: TeachingState = {
+      teachingPace: Math.round(teachingPace),
+      emotionalEngagement: Math.round(emotionalEngagement),
+      movementFrequency: Math.round(movementFrequency),
+      eyeContactRate: Math.round(eyeContactRate),
+      questionRate: Math.round(questionRate),
+      lectureRatio: Math.round(lectureRatio),
+      pacingVariation: Math.round(pacingVariation),
+    };
+
+    // 资源利用率 — 前期偏低，中期回升，后期稳定
+    const slideCompletionRate = Math.min(100, Math.max(40, 50 + week * 2.5 + rand() * 8));
+    const difficultyReplayRate = Math.min(100, Math.max(15, 30 + (week > 8 ? 15 : 0) + rand() * 20));
+    const resourceDownloadCount = Math.floor(10 + week * 3 + rand() * 15);
+    const videoWatchDepth = Math.min(100, Math.max(40, 50 + week * 2 + rand() * 10));
+    const materialAccessFreq = Math.min(20, Math.max(3, 5 + Math.floor(rand() * 4) + (week > 6 ? 2 : 0)));
+    const resourceRequestCount = Math.floor(3 + rand() * 10 + (week > 10 ? 5 : 0));
+    const contentCoverage = Math.min(100, Math.max(60, 65 + week * 1.5 + rand() * 10));
+    const resourceSatisfaction = Math.min(100, Math.max(45, 55 + week * 2 + rand() * 12));
+
+    const resourceUtilization: ResourceUtilization = {
+      slideCompletionRate: Math.round(slideCompletionRate),
+      difficultyReplayRate: Math.round(difficultyReplayRate),
+      resourceDownloadCount,
+      videoWatchDepth: Math.round(videoWatchDepth),
+      materialAccessFreq: Math.round(materialAccessFreq * 10) / 10,
+      resourceRequestCount,
+      contentCoverage: Math.round(contentCoverage),
+      resourceSatisfaction: Math.round(resourceSatisfaction),
+    };
+
+    // 互动方式 — 随课程推进逐步增强
+    const qAndFFrequency = Math.min(20, Math.max(3, 5 + Math.floor(rand() * 5) + (week > 6 ? 3 : 0)));
+    const groupDiscussionHeat = Math.min(100, Math.max(25, 35 + week * 3 + rand() * 15));
+    const danmakuActivity = Math.min(15, Math.max(1, 2 + Math.floor(rand() * 5) + (week > 4 ? 2 : 0)));
+    const discussionBoardActivity = Math.min(50, Math.max(5, 10 + week * 2 + Math.floor(rand() * 10)));
+    const peerReviewCount = Math.min(20, Math.max(0, Math.floor(rand() * 5) + (week >= 10 ? 5 : 0)));
+    const livePollParticipation = Math.min(100, Math.max(40, 50 + week * 2.5 + rand() * 15));
+    const thinkPairShareFreq = Math.min(10, Math.max(0, Math.floor(rand() * 3) + (week > 6 ? 2 : 0)));
+    const flipClassParticipation = Math.min(100, Math.max(30, 40 + week * 3.5 + rand() * 15));
+
+    const interactionMethod: InteractionMethod = {
+      qAndFFrequency: Math.round(qAndFFrequency),
+      groupDiscussionHeat: Math.round(groupDiscussionHeat),
+      danmakuActivity: Math.round(danmakuActivity * 10) / 10,
+      discussionBoardActivity: Math.round(discussionBoardActivity),
+      peerReviewCount,
+      livePollParticipation: Math.round(livePollParticipation),
+      thinkPairShareFreq: Math.round(thinkPairShareFreq),
+      flipClassParticipation: Math.round(flipClassParticipation),
+    };
+
+    // 综合健康度
+    const teachingScore = (teachingPace + emotionalEngagement + eyeContactRate + pacingVariation) / 4;
+    const resourceScore = (slideCompletionRate + videoWatchDepth + contentCoverage + resourceSatisfaction) / 4;
+    const interactionScore = (groupDiscussionHeat + discussionBoardActivity / 2 + livePollParticipation + flipClassParticipation) / 4;
+    const overallHealth = Math.min(100, Math.max(30, Math.round((teachingScore + resourceScore + interactionScore) / 3)));
+
+    // 健康等级
+    const healthGrade: CourseProfileSnapshot['healthGrade'] =
+      overallHealth >= 85 ? 'A' : overallHealth >= 70 ? 'B' : overallHealth >= 55 ? 'C' : 'D';
+
+    // 风险标签
+    const riskFlags: string[] = [];
+    if (teachingPace < 60) riskFlags.push('讲授语速偏慢，课堂节奏需加快');
+    if (emotionalEngagement < 60) riskFlags.push('教师情绪饱满度偏低');
+    if (movementFrequency < 8) riskFlags.push('课堂走动频次不足');
+    if (slideCompletionRate < 60) riskFlags.push('课件完播率偏低');
+    if (difficultyReplayRate > 70) riskFlags.push('难点回放率过高，内容理解障碍');
+    if (groupDiscussionHeat < 40) riskFlags.push('小组讨论热度不足');
+    if (flipClassParticipation < 50) riskFlags.push('翻转课堂参与率低');
+    if (questionRate < 6) riskFlags.push('课堂提问频次过低');
+
+    // 改善信号
+    const improvementSignals: string[] = [];
+    if (teachingPace > 75) improvementSignals.push('讲授语速适中，节奏感良好');
+    if (emotionalEngagement > 75) improvementSignals.push('教师情绪饱满，感染力强');
+    if (slideCompletionRate > 80) improvementSignals.push('课件完播率优秀');
+    if (groupDiscussionHeat > 70) improvementSignals.push('小组讨论活跃，协作氛围好');
+    if (flipClassParticipation > 70) improvementSignals.push('翻转课堂参与度高');
+    if (videoWatchDepth > 70) improvementSignals.push('视频学习深度良好');
+    if (eyeContactRate > 70) improvementSignals.push('师生眼神交流充分');
+
+    snapshots.push({
+      week,
+      dimension: { teachingState, resourceUtilization, interactionMethod },
+      overallHealth,
+      healthGrade,
+      riskFlags,
+      improvementSignals,
+    });
+  }
+
+  return snapshots;
+}
+
+/**
+ * 生成教师教学状态 16 周趋势数据（用于折线图）
+ */
+export function generateTeachingTrendData() {
+  const data: Array<{ week: number; label: string; value: number }> = [];
+  const rand = seededRandom(2026);
+  const dimensions: Array<{ key: keyof TeachingState; label: string }> = [
+    { key: 'teachingPace', label: '讲授语速' },
+    { key: 'emotionalEngagement', label: '情绪饱满度' },
+    { key: 'movementFrequency', label: '走动频次' },
+    { key: 'eyeContactRate', label: '眼神交流' },
+    { key: 'questionRate', label: '提问频次' },
+    { key: 'pacingVariation', label: '节奏变化' },
+  ];
+
+  for (const dim of dimensions) {
+    for (let week = 1; week <= 16; week++) {
+      const base = 40 + week * 2.5;
+      data.push({
+        week,
+        label: dim.label,
+        value: Math.min(100, Math.max(20, Math.round(base + rand() * 20))),
+      });
+    }
+  }
+  return data;
+}
+
+/**
+ * 生成课程资源利用率 16 周趋势数据
+ */
+export function generateResourceTrendData() {
+  const data: Array<{ week: number; label: string; value: number }> = [];
+  const rand = seededRandom(2027);
+  const dimensions: Array<{ key: keyof ResourceUtilization; label: string }> = [
+    { key: 'slideCompletionRate', label: '课件完播率' },
+    { key: 'difficultyReplayRate', label: '难点回放率' },
+    { key: 'videoWatchDepth', label: '视频观看深度' },
+    { key: 'contentCoverage', label: '内容覆盖率' },
+    { key: 'resourceSatisfaction', label: '资源满意度' },
+  ];
+
+  for (const dim of dimensions) {
+    for (let week = 1; week <= 16; week++) {
+      const base = 45 + week * 2.2;
+      data.push({
+        week,
+        label: dim.label,
+        value: Math.min(100, Math.max(20, Math.round(base + rand() * 18))),
+      });
+    }
+  }
+  return data;
+}
+
+/**
+ * 生成互动方式 16 周趋势数据
+ */
+export function generateInteractionTrendData() {
+  const data: Array<{ week: number; label: string; value: number }> = [];
+  const rand = seededRandom(2028);
+  const dimensions: Array<{ key: keyof InteractionMethod; label: string }> = [
+    { key: 'qAndFFrequency', label: '师生问答' },
+    { key: 'groupDiscussionHeat', label: '小组讨论' },
+    { key: 'danmakuActivity', label: '弹幕活跃度' },
+    { key: 'discussionBoardActivity', label: '讨论区' },
+    { key: 'livePollParticipation', label: '实时投票' },
+    { key: 'flipClassParticipation', label: '翻转课堂' },
+  ];
+
+  for (const dim of dimensions) {
+    for (let week = 1; week <= 16; week++) {
+      const base = 30 + week * 3;
+      data.push({
+        week,
+        label: dim.label,
+        value: Math.min(100, Math.max(10, Math.round(base + rand() * 22))),
+      });
+    }
+  }
+  return data;
+}
+
 // ===================== 统一导出 =====================
 
 export function generateAllMockData() {
@@ -633,6 +833,10 @@ export function generateAllMockData() {
     suggestions: mockSuggestions,
     studentProfiles: generateMockStudentProfiles(),
     interventions: mockInterventions,
+    courseProfiles: generateMockCourseProfiles(),
+    teachingTrendData: generateTeachingTrendData(),
+    resourceTrendData: generateResourceTrendData(),
+    interactionTrendData: generateInteractionTrendData(),
     classroomTimeSeries: (studentId: string, week: number) => generateMockClassroomTimeSeries(studentId, week),
   };
 }

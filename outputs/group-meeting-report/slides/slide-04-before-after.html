@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; }
+  .slide {
+    width: 720pt;
+    height: 405pt;
+    background: #F4F6F6;
+    position: relative;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", "SimHei", sans-serif;
+    color: #2E4053;
+  }
+  .header-bar {
+    background: linear-gradient(90deg, #1C2833, #2E4053);
+    height: 48pt;
+    display: flex;
+    align-items: center;
+    padding-left: 36pt;
+  }
+  .header-bar h1 {
+    font-size: 20pt;
+    color: #FFFFFF;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 1pt;
+  }
+  .content {
+    display: flex;
+    padding: 20pt 30pt;
+    gap: 24pt;
+    height: calc(405pt - 48pt);
+    align-items: stretch;
+  }
+  .panel {
+    flex: 1;
+    border-radius: 8pt;
+    padding: 16pt;
+    display: flex;
+    flex-direction: column;
+  }
+  .panel.before {
+    background: #FFF3F3;
+    border: 2pt solid #E8B4B8;
+  }
+  .panel.after {
+    background: #F3FFF6;
+    border: 2pt solid #87A96B;
+  }
+  .panel-label {
+    font-size: 14pt;
+    font-weight: bold;
+    margin-bottom: 10pt;
+    display: flex;
+    align-items: center;
+    gap: 6pt;
+  }
+  .panel.before .panel-label { color: #C0392B; }
+  .panel.after .panel-label { color: #2E7D32; }
+  .panel-placeholder {
+    flex: 1;
+    background: #FFFFFF;
+    border-radius: 6pt;
+    border: 2pt dashed #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    font-size: 10pt;
+    margin-bottom: 10pt;
+    min-height: 100pt;
+  }
+  .issues, .improvements {
+    flex: 1;
+  }
+  .item {
+    font-size: 9.5pt;
+    line-height: 1.5;
+    margin-bottom: 6pt;
+    padding-left: 14pt;
+    position: relative;
+  }
+  .item::before {
+    content: '✗';
+    position: absolute;
+    left: 0;
+    color: #C0392B;
+    font-weight: bold;
+  }
+  .improvements .item::before {
+    content: '✓';
+    color: #2E7D32;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header-bar">
+    <h1>模块二：理论图绘制 — 思考与迭代</h1>
+  </div>
+  <div class="content">
+    <div class="panel before">
+      <div class="panel-label">❌ Before — GPT 生成</div>
+      <div class="panel-placeholder">GPT 原图（反面教材）</div>
+      <div class="issues">
+        <div class="item">过于具象，过度强调树形生态</div>
+        <div class="item">缺乏严谨性，不适合学术申报书</div>
+        <div class="item">没有清晰箭头交待逻辑循环</div>
+      </div>
+    </div>
+    <div class="panel after">
+      <div class="panel-label">✅ After — 重构后</div>
+      <div class="panel-placeholder">重构后框架图</div>
+      <div class="improvements">
+        <div class="item">抽象化处理，弱化具象视觉元素</div>
+        <div class="item">保留核心"生态"概念</div>
+        <div class="item">突出各模块间的流转关系</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

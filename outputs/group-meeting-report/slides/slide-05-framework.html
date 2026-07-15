@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; }
+  .slide {
+    width: 720pt;
+    height: 405pt;
+    background: #FFFFFF;
+    position: relative;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", "SimHei", sans-serif;
+    color: #2E4053;
+  }
+  .header-bar {
+    background: linear-gradient(90deg, #1C2833, #2E4053);
+    height: 44pt;
+    display: flex;
+    align-items: center;
+    padding-left: 36pt;
+  }
+  .header-bar h1 {
+    font-size: 18pt;
+    color: #FFFFFF;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 1pt;
+  }
+  .content {
+    padding: 16pt 30pt;
+    height: calc(405pt - 44pt);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .chart-area {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+  .layer-row {
+    display: flex;
+    align-items: center;
+    gap: 12pt;
+    margin: 4pt 0;
+  }
+  .layer-box {
+    padding: 8pt 16pt;
+    border-radius: 6pt;
+    font-size: 11pt;
+    font-weight: bold;
+    color: #FFFFFF;
+    text-align: center;
+    min-width: 140pt;
+    letter-spacing: 1pt;
+  }
+  .layer-box.l1 { background: #1C2833; }
+  .layer-box.l2 { background: #4A90D9; }
+  .layer-box.l3 { background: #5EA8A7; }
+  .layer-box.l4 { background: #E07A5F; }
+  .layer-box.l5 { background: #D4A843; }
+  .arrow-down {
+    font-size: 16pt;
+    color: #8A9BA8;
+    margin: 2pt 0;
+  }
+  .arrow-circle {
+    font-size: 14pt;
+    color: #4A90D9;
+    margin-left: 10pt;
+  }
+  .layer-label {
+    font-size: 9pt;
+    color: #8A9BA8;
+    min-width: 80pt;
+    text-align: right;
+  }
+  .sub-label {
+    font-size: 8.5pt;
+    color: #aaa;
+    margin-top: 2pt;
+  }
+  .footer-note {
+    font-size: 9pt;
+    color: #8A9BA8;
+    margin-top: 8pt;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header-bar">
+    <h1>总体研究框架图 — 五层流转逻辑</h1>
+  </div>
+  <div class="content">
+    <div class="chart-area">
+      <div class="layer-row">
+        <div class="layer-label">Layer 1</div>
+        <div class="layer-box l1">数据基础<div class="sub-label">行为 / 过程 / 成果</div></div>
+        <div class="arrow-circle">↘</div>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="layer-row">
+        <div class="layer-label">Layer 2</div>
+        <div class="layer-box l2">数据理解<div class="sub-label">融合建模</div></div>
+        <div class="arrow-circle">↘</div>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="layer-row">
+        <div class="layer-label">Layer 3</div>
+        <div class="layer-box l3">状态诊断</div>
+        <div class="arrow-circle">↘</div>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="layer-row">
+        <div class="layer-label">Layer 4</div>
+        <div class="layer-box l4">决策优化</div>
+        <div class="arrow-circle">↘</div>
+      </div>
+      <div class="arrow-down">↓</div>
+      <div class="layer-row">
+        <div class="layer-label">Layer 5</div>
+        <div class="layer-box l5">机制形成<div class="sub-label">持续改进闭环</div></div>
+        <div class="arrow-circle">↺</div>
+      </div>
+    </div>
+    <div class="footer-note">通过箭头闭环设计，清晰交代数据如何赋能教学，最终形成生态闭环</div>
+  </div>
+</div>
+</body>
+</html>

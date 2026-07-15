@@ -27,13 +27,13 @@ const rejectOptions: { value: string; label: string }[] = [
 // ── AI 沟通话术模板库 ──────────────────────────────────────
 const interventionTemplates: Record<string, string> = {
   low_engagement: (week: number, evidence: string[], module: string) =>
-    `同学你好，系统注意到你在第 ${week} 周的学习中活跃度有所下降。${evidence.join('。')} 请问在课程学习上遇到了什么困难吗？建议复习${module}相关重点内容，如有需要随时联系任课教师。`,
+    `课程第 ${week} 周整体参与度出现下降趋势。${evidence.join('。')} 建议在${module}模块增加互动环节，优化教学节奏。`,
   knowledge_gap: (week: number, evidence: string[], module: string) =>
-    `同学你好，多模态分析显示你在第 ${week} 周「${module}」模块的知识掌握度低于预期。${evidence.join('。')} 系统建议你重新观看相关视频讲解，并完成配套练习题。加油！`,
+    `多模态分析显示第 ${week} 周「${module}」模块的知识掌握度低于预期。${evidence.join('。')} 建议调整教学资源配比，增加针对性辅导材料。`,
   performance_drop: (week: number, evidence: string[], module: string) =>
-    `同学你好，系统监测到你在第 ${week} 周的表现有所下滑。${evidence.join('。')} 这可能是学习节奏调整期的正常现象，建议适当休息并回顾之前的学习内容。`,
+    `系统监测到第 ${week} 周课程整体表现有所下滑。${evidence.join('。')} 这可能反映了教学节奏或资源适配的问题，建议审视当前教学设计。`,
   anomaly: (week: number, evidence: string[], module: string) =>
-    `同学你好，系统在第 ${week} 周发现了异常学习行为模式。${evidence.join('。')} 请检查是否按时完成了学习任务，如有技术问题请及时反馈。`,
+    `系统在第 ${week} 周发现了异常数据模式。${evidence.join('。')} 请检查课程设计与资源供给是否匹配，及时调整教学策略。`,
 };
 
 // ── 模态框组件 ──────────────────────────────────────────────
@@ -110,8 +110,8 @@ function InterventionModal({
               <Wand2 size={18} className="text-blue-600" />
             </div>
             <div>
-              <h3 className="text-base font-bold text-slate-800">一键生成干预话术</h3>
-              <p className="text-xs text-slate-500">AI 基于多模态数据自动生成沟通草稿</p>
+              <h3 className="text-base font-bold text-slate-800">一键生成课程优化话术</h3>
+              <p className="text-xs text-slate-500">AI 基于多源数据自动生成课程改进建议</p>
             </div>
           </div>
           <button
@@ -149,8 +149,8 @@ function InterventionModal({
             <div className="flex items-center justify-center py-8">
               <div className="text-center">
                 <Loader2 size={32} className="text-blue-500 animate-spin mx-auto mb-3" />
-                <p className="text-sm text-slate-500">AI 正在分析多模态数据...</p>
-                <p className="text-xs text-slate-400 mt-1">生成个性化沟通话术</p>
+                <p className="text-sm text-slate-500">AI 正在分析多源数据...</p>
+                <p className="text-xs text-slate-400 mt-1">生成课程优化建议</p>
               </div>
             </div>
           )}
@@ -161,7 +161,7 @@ function InterventionModal({
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
                   <MessageSquare size={14} className="text-blue-500" />
-                  AI 生成话术草稿
+                  AI 生成优化建议
                 </label>
                 <button
                   onClick={handleCopy}
@@ -176,7 +176,7 @@ function InterventionModal({
                 onChange={e => setDraftText(e.target.value)}
                 className="w-full p-4 border border-slate-200 rounded-xl text-sm bg-slate-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all"
                 rows={6}
-                placeholder="AI 生成的话术将显示在这里..."
+                placeholder="AI 生成的优化建议将显示在这里..."
               />
               <p className="text-xs text-slate-400 mt-2 flex items-center gap-1">
                 <Sparkles size={10} />
@@ -251,7 +251,7 @@ function InterventionModal({
               ) : (
                 <>
                   <Send size={14} />
-                  一键发送（模拟）
+                  一键生成（模拟）
                 </>
               )}
             </button>
@@ -264,8 +264,8 @@ function InterventionModal({
             <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
               <Check size={32} className="text-emerald-600" />
             </div>
-            <h4 className="text-lg font-bold text-slate-800 mb-2">干预话术已发送</h4>
-            <p className="text-sm text-slate-500 mb-1">沟通消息已成功发送至学生端</p>
+            <h4 className="text-lg font-bold text-slate-800 mb-2">课程优化方案已生成</h4>
+            <p className="text-sm text-slate-500 mb-1">改进建议已保存至课程优化日志</p>
             <p className="text-xs text-slate-400">该预警已标记为「已处理」</p>
           </div>
         )}
@@ -368,7 +368,7 @@ export default function AIDecisionPage() {
           </div>
           <div>
             <p className="text-2xl font-bold text-slate-800">{suggestions.length}</p>
-            <p className="text-sm text-slate-500">AI建议总数</p>
+            <p className="text-sm text-slate-500">AI课程优化建议</p>
           </div>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
@@ -416,8 +416,8 @@ export default function AIDecisionPage() {
                 <AlertTriangle size={20} className="text-red-600" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-red-800">高风险预警 — 需要立即干预</h3>
-                <p className="text-xs text-red-600 mt-0.5">共 {highRiskAlerts.length} 条未处理的高级别预警</p>
+                <h3 className="text-sm font-bold text-red-800">课程风险预警 — 需要立即优化</h3>
+                <p className="text-xs text-red-600 mt-0.5">共 {highRiskAlerts.length} 条未处理的高级别课程预警</p>
               </div>
             </div>
             <span className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-full font-semibold animate-pulse">
@@ -448,7 +448,7 @@ export default function AIDecisionPage() {
                   className="flex-shrink-0 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-1.5 shadow-sm"
                 >
                   <Wand2 size={14} />
-                  一键干预
+                  一键优化
                 </button>
               </div>
             ))}
@@ -462,7 +462,7 @@ export default function AIDecisionPage() {
         <div className="space-y-4">
           <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
             <Brain size={18} className="text-blue-600" />
-            AI 辅助层 — 预警与建议
+            AI 辅助层 — 课程预警与建议
           </h3>
           {suggestions.map(sug => {
             const isSelected = selectedSuggestion === sug.id;
@@ -579,7 +579,7 @@ export default function AIDecisionPage() {
         <div className="space-y-4">
           <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
             <Edit3 size={18} className="text-emerald-600" />
-            教师决策层 — 人机协同工作台
+            教师决策层 — 课程优化工作台
           </h3>
 
           {!selected ? (
@@ -608,10 +608,10 @@ export default function AIDecisionPage() {
                   <span className="text-sm font-medium text-emerald-800">采纳建议</span>
                 </div>
                 <p className="text-xs text-emerald-600 mb-3">
-                  采纳后将自动生成交付干预日志，并更新课程状态
+                  采纳后将自动生成课程优化日志，并更新课程状态
                 </p>
                 <textarea
-                  placeholder="输入干预措施说明（可选）..."
+                  placeholder="输入优化措施说明（可选）..."
                   className="w-full p-2 border border-emerald-200 rounded-lg text-xs bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 resize-none"
                   rows={2}
                   value={selected.teacherDecision || ''}
@@ -632,7 +632,7 @@ export default function AIDecisionPage() {
                   <span className="text-sm font-medium text-red-800">拒绝建议</span>
                 </div>
                 <p className="text-xs text-red-600 mb-2">
-                  拒绝原因将反哺 AI 模型训练，提升后续建议质量
+                  拒绝原因将反哺 AI 模型训练，提升后续课程优化建议质量
                 </p>
                 <select
                   value={rejectReason}
@@ -665,7 +665,7 @@ export default function AIDecisionPage() {
               <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
                 <div className="flex items-center gap-2 mb-2">
                   <Edit3 size={16} className="text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800">修改干预参数</span>
+                  <span className="text-sm font-medium text-blue-800">优化课程方案</span>
                 </div>
                 <p className="text-xs text-blue-600 mb-2">
                   保留 AI 建议方向，但调整具体实施方案
@@ -689,7 +689,7 @@ export default function AIDecisionPage() {
               <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
                 <p className="text-xs text-slate-500 flex items-center gap-1">
                   <Sparkles size={12} />
-                  您的决策将作为反馈信号，帮助 AI 模型优化后续建议的准确性和适用性
+                  您的决策将作为反馈信号，帮助 AI 模型优化后续课程改进建议的准确性和适用性
                 </p>
               </div>
             </div>

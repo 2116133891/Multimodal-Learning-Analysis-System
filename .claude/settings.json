@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["$HOME/.claude/hooks/before-stop-deliver.sh"],
+            "statusMessage": "交付验收检查..."
+          }
+        ]
+      }
+    ]
+  }
+}

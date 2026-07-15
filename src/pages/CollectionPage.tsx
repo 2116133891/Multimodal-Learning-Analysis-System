@@ -5,11 +5,11 @@ import CardChart from '../components/CardChart';
 import { Database, CheckCircle, FileText, MessageSquare, BarChart3 } from 'lucide-react';
 
 const typeConfig = {
-  behavior: { label: '学习行为数据', icon: BarChart3, color: 'bg-blue-500', desc: '登录频次、视频观看时长、讨论区发帖数' },
-  process: { label: '学习过程数据', icon: Database, color: 'bg-emerald-500', desc: '作业提交、在线测试、互动参与' },
-  outcome: { label: '学习成果数据', icon: CheckCircle, color: 'bg-purple-500', desc: '考试成绩、作品评分、项目完成度' },
-  evaluation: { label: '教师评价数据', icon: FileText, color: 'bg-orange-500', desc: '课堂表现评语、作业反馈' },
-  feedback: { label: '课程反馈数据', icon: MessageSquare, color: 'bg-pink-500', desc: '学生问卷评分、满意度调查' },
+  behavior: { label: '教学行为数据', icon: BarChart3, color: 'bg-blue-500', desc: '讲授语速、情绪饱满度、走动频次、课堂互动' },
+  process: { label: '资源使用数据', icon: Database, color: 'bg-emerald-500', desc: '课件完播率、难点回放率、视频观看深度、资料下载' },
+  outcome: { label: '课程成果数据', icon: CheckCircle, color: 'bg-purple-500', desc: '目标达成度、模块得分、作品质量、课程进化' },
+  evaluation: { label: '教师评价数据', icon: FileText, color: 'bg-orange-500', desc: '课堂表现评语、教学状态评估、资源反馈' },
+  feedback: { label: '课程反馈数据', icon: MessageSquare, color: 'bg-pink-500', desc: '学生问卷评分、满意度调查、改进建议' },
 };
 
 export default function CollectionPage() {
@@ -39,7 +39,7 @@ export default function CollectionPage() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">数据采集</h2>
-          <p className="text-sm text-slate-500 mt-1">多模态学习数据体系构建 — 五种数据类型采集与管理</p>
+          <p className="text-sm text-slate-500 mt-1">多源数据体系构建 — 教学状态、资源利用、互动方式五维数据采集与管理</p>
         </div>
         <button
           onClick={handleGenerate}

@@ -139,8 +139,8 @@ export default function StudentProfilePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">学习者多模态画像</h2>
-          <p className="text-sm text-slate-500 mt-1">以个体为单位的多模态特征分析与 AI 精准诊断</p>
+          <h2 className="text-2xl font-bold text-slate-800">课程画像详情</h2>
+          <p className="text-sm text-slate-500 mt-1">以个体为单位的多模态特征分析与 AI 精准诊断 — 支撑课程持续改进</p>
         </div>
         <select
           value={selectedStudent}

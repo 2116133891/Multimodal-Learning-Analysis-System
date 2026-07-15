@@ -29,9 +29,9 @@ const COLORS = {
 };
 
 const modalityLabels: Record<string, string> = {
-  video_emotion: '视频微表情',
-  text_semantic: '文本语义',
-  interaction_behavior: '交互行为',
+  video_emotion: '教学状态监测',
+  text_semantic: '资源利用分析',
+  interaction_behavior: '互动行为追踪',
   traditional_data: '传统学习数据',
 };
 
@@ -161,7 +161,7 @@ export default function FusionPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-800">数据融合</h2>
-        <p className="text-sm text-slate-500 mt-1">多模态特征融合引擎 — 视频微表情、文本语义、交互行为的时序对齐与融合表征</p>
+        <p className="text-sm text-slate-500 mt-1">多源数据融合引擎 — 教学状态、资源利用、互动方式的时序对齐与融合表征</p>
       </div>
 
       {/* 周选择器 + 学生选择器 */}
@@ -202,9 +202,9 @@ export default function FusionPage() {
         title="四种模态特征在 16 周时间轴上的趋势对齐"
         toolbar={
           <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.video }} />视频微表情</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.text }} />文本语义</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.interaction }} />交互行为</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.video }} />教学状态</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.text }} />资源利用</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.interaction }} />互动行为</span>
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.traditional }} />传统数据</span>
           </div>
         }
@@ -240,9 +240,9 @@ export default function FusionPage() {
             }}
           />
           <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
-          <Area type="monotone" dataKey="video" name="视频微表情" stroke={COLORS.video} strokeWidth={2.5} fill="url(#gradVideo)" dot={false} />
-          <Area type="monotone" dataKey="text" name="文本语义" stroke={COLORS.text} strokeWidth={2.5} fill="url(#gradText)" dot={false} />
-          <Area type="monotone" dataKey="interaction" name="交互行为" stroke={COLORS.interaction} strokeWidth={2.5} fill="url(#gradInteraction)" dot={false} />
+          <Area type="monotone" dataKey="video" name="教学状态" stroke={COLORS.video} strokeWidth={2.5} fill="url(#gradVideo)" dot={false} />
+          <Area type="monotone" dataKey="text" name="资源利用" stroke={COLORS.text} strokeWidth={2.5} fill="url(#gradText)" dot={false} />
+          <Area type="monotone" dataKey="interaction" name="互动行为" stroke={COLORS.interaction} strokeWidth={2.5} fill="url(#gradInteraction)" dot={false} />
           <Area type="monotone" dataKey="traditional" name="传统数据" stroke={COLORS.traditional} strokeWidth={2.5} fill="url(#gradTraditional)" dot={false} />
         </AreaChart>
       </RechartsCard>

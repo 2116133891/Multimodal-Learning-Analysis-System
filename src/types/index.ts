@@ -289,6 +289,60 @@ export interface StudentMultimodalProfile {
   }[];
 }
 
+// ===================== 课程画像数据（Course Profile）=====================
+
+// 教师教学状态维度
+export interface TeachingState {
+  teachingPace: number;        // 讲授语速（字/分钟），标准化 0-100
+  emotionalEngagement: number; // 情绪饱满度（语调变化、肢体语言丰富度）
+  movementFrequency: number;   // 走动频次（每节课教室移动次数）
+  eyeContactRate: number;      // 眼神交流覆盖率（%）
+  questionRate: number;        // 提问频次（每节课）
+  lectureRatio: number;        // 讲授占比（%）vs 学生活动占比
+  pacingVariation: number;     // 语速变化系数（反映节奏感）
+}
+
+// 课程平台资源维度
+export interface ResourceUtilization {
+  slideCompletionRate: number;     // 课件完播率（%）
+  difficultyReplayRate: number;    // 难点回放率（%）
+  resourceDownloadCount: number;   // 资源下载量
+  videoWatchDepth: number;         // 视频观看深度（平均看完百分比）
+  materialAccessFreq: number;      // 资料访问频次（每日）
+  resourceRequestCount: number;    // 资源请求量
+  contentCoverage: number;         // 内容覆盖率（%）
+  resourceSatisfaction: number;    // 资源满意度（%）
+}
+
+// 互动方式与教学方法维度
+export interface InteractionMethod {
+  qAndFFrequency: number;       // 师生问答频次（每节课）
+  groupDiscussionHeat: number;  // 小组讨论热度（活跃度指数）
+  danmakuActivity: number;      // 弹幕活跃度（每分钟条数）
+  discussionBoardActivity: number; // 讨论区活跃度（帖子/回复数）
+  peerReviewCount: number;      // 同伴互评次数
+  livePollParticipation: number; // 实时投票参与率（%）
+  thinkPairShareFreq: number;   // 思考-配对-分享频次
+  flipClassParticipation: number; // 翻转课堂参与率（%）
+}
+
+// 课程画像综合维度
+export interface CourseProfileDimension {
+  teachingState: TeachingState;
+  resourceUtilization: ResourceUtilization;
+  interactionMethod: InteractionMethod;
+}
+
+// 课程画像周度快照
+export interface CourseProfileSnapshot {
+  week: number;
+  dimension: CourseProfileDimension;
+  overallHealth: number;         // 课程综合健康度 0-100
+  healthGrade: 'A' | 'B' | 'C' | 'D'; // 健康等级
+  riskFlags: string[];           // 风险标签
+  improvementSignals: string[];  // 改善信号
+}
+
 // ===================== 干预有效性评估 =====================
 
 export interface InterventionEffectiveness {

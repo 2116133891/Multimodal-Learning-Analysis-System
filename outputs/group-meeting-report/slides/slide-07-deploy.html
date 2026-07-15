@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; }
+  .slide {
+    width: 720pt;
+    height: 405pt;
+    background: linear-gradient(135deg, #1C2833 0%, #2E4053 100%);
+    position: relative;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", "SimHei", sans-serif;
+    color: #F4F6F6;
+  }
+  .slide::before {
+    content: '';
+    position: absolute;
+    top: -80pt;
+    right: -80pt;
+    width: 350pt;
+    height: 350pt;
+    border-radius: 50%;
+    background: rgba(74, 144, 217, 0.1);
+  }
+  .header-bar {
+    height: 44pt;
+    display: flex;
+    align-items: center;
+    padding-left: 36pt;
+    border-bottom: 1pt solid rgba(255,255,255,0.1);
+  }
+  .header-bar h1 {
+    font-size: 18pt;
+    color: #FFFFFF;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 1pt;
+  }
+  .content {
+    padding: 24pt 40pt;
+    height: calc(405pt - 44pt);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+  }
+  .title {
+    font-size: 24pt;
+    font-weight: bold;
+    color: #FFFFFF;
+    margin-bottom: 20pt;
+    letter-spacing: 2pt;
+  }
+  .accomplishments {
+    display: flex;
+    gap: 30pt;
+    margin-bottom: 24pt;
+  }
+  .acc-item {
+    text-align: center;
+  }
+  .acc-icon {
+    font-size: 28pt;
+    margin-bottom: 6pt;
+  }
+  .acc-label {
+    font-size: 12pt;
+    color: #AAB7B8;
+    margin-bottom: 4pt;
+  }
+  .acc-detail {
+    font-size: 10pt;
+    color: #8A9BA8;
+    max-width: 200pt;
+  }
+  .url-box {
+    background: rgba(74, 144, 217, 0.2);
+    border: 2pt solid #4A90D9;
+    border-radius: 8pt;
+    padding: 12pt 30pt;
+    text-align: center;
+  }
+  .url-label {
+    font-size: 10pt;
+    color: #AAB7B8;
+    margin-bottom: 4pt;
+  }
+  .url-value {
+    font-size: 16pt;
+    color: #4A90D9;
+    font-weight: bold;
+    letter-spacing: 1pt;
+  }
+  .qr-placeholder {
+    width: 80pt;
+    height: 80pt;
+    border: 2pt dashed #4A90D9;
+    border-radius: 6pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A9BA8;
+    font-size: 9pt;
+    margin-top: 10pt;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header-bar">
+    <h1>系统部署与公网展示</h1>
+  </div>
+  <div class="content">
+    <div class="title">🚀 成果展示</div>
+    <div class="accomplishments">
+      <div class="acc-item">
+        <div class="acc-icon">📦</div>
+        <div class="acc-label">代码开源</div>
+        <div class="acc-detail">系统底层代码已规范化<br/>上传至个人 GitHub 仓库</div>
+      </div>
+      <div class="acc-item">
+        <div class="acc-icon">🌐</div>
+        <div class="acc-label">公网访问</div>
+        <div class="acc-detail">系统已成功部署至<br/>Vercel 公网</div>
+      </div>
+    </div>
+    <div class="url-box">
+      <div class="url-label">在线访问地址</div>
+      <div class="url-value">vercel-url-placeholder</div>
+      <div class="qr-placeholder">二维码占位</div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

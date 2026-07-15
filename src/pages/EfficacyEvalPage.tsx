@@ -14,7 +14,7 @@ import {
   Legend, ResponsiveContainer, Area, AreaChart,
 } from 'recharts';
 
-// ── 模拟数据：5 次教学干预的 Pre/Post 分数 ──────────────────
+// ── 模拟数据：5 次教学优化的 Pre/Post 分数 ──────────────────
 const interventionData = [
   {
     id: 'int1', type: '教学节奏调整', description: '第 3 周增加色彩理论实践课时',
@@ -73,7 +73,7 @@ const overallUplift = Math.round(
   avgPre.reduce((s, d) => s + d.value, 0) / avgPre.length
 );
 
-// 干预有效率：至少 3 个维度提升 ≥ 8 分的干预占比
+// 优化有效率：至少 3 个维度提升 ≥ 8 分的优化占比
 const effectiveInterventions = interventionData.filter(i =>
   radarDimensions.filter(d => (i.post as any)[d.key] - (i.pre as any)[d.key] >= 8).length >= 3
 ).length;
@@ -84,7 +84,7 @@ const weeklyTrend = (() => {
   const data = [];
   // 学习投入度：从 55 稳步上升到 88（S 型曲线）
   const engagementBase = [55, 58, 60, 62, 65, 68, 71, 73, 75, 77, 79, 81, 83, 85, 86, 88];
-  // 干预次数：前期密集（3-5 次），后期减少到 0-1 次（系统趋于稳定）
+  // 课程优化次数：前期密集（3-5 次），后期减少到 0-1 次（系统趋于稳定）
   const interventionCount = [5, 4, 3, 4, 3, 2, 3, 2, 2, 1, 2, 1, 1, 1, 0, 1];
   for (let w = 1; w <= 16; w++) {
     data.push({
@@ -96,11 +96,11 @@ const weeklyTrend = (() => {
   return data;
 })();
 
-// ── 干预前后雷达图（ECharts 版，支持面积叠加对比） ────────────
+// ── 优化前后雷达图（ECharts 版，支持面积叠加对比） ────────────
 const radarRadarOption = {
   tooltip: { trigger: 'item' },
   legend: {
-    data: ['干预前 Pre-Test', '干预后 Post-Test'],
+    data: ['优化前 Pre-Test', '优化后 Post-Test'],
     bottom: 0,
   },
   radar: {
@@ -115,7 +115,7 @@ const radarRadarOption = {
     type: 'radar' as const,
     data: [
       {
-        name: '干预前 Pre-Test',
+        name: '优化前 Pre-Test',
         value: avgPre.map(d => d.value),
         areaStyle: { color: 'rgba(148, 163, 184, 0.15)' },
         itemStyle: { color: '#94a3b8' },
@@ -124,7 +124,7 @@ const radarRadarOption = {
         symbolSize: 6,
       },
       {
-        name: '干预后 Post-Test',
+        name: '优化后 Post-Test',
         value: avgPost.map(d => d.value),
         areaStyle: { color: 'rgba(59, 130, 246, 0.25)' },
         itemStyle: { color: '#3b82f6' },
@@ -136,7 +136,7 @@ const radarRadarOption = {
   }],
 };
 
-// ── 双轴折线图（Recharts 版，左 Y = 投入度，右 Y = 干预次数） ──
+// ── 双轴折线图（Recharts 版，左 Y = 课程活力，右 Y = 优化次数） ──
 const dualAxisChart = (
   <ResponsiveContainer width="100%" height={350}>
     <AreaChart
@@ -178,13 +178,13 @@ const dualAxisChart = (
       <RechartsTooltip
         formatter={(value: number, name: string) => [
           Number(value).toFixed(name === 'engagement' ? 1 : 0),
-          name === 'engagement' ? '学习投入度' : '干预次数',
+          name === 'engagement' ? '课程活力' : '优化次数',
         ]}
         labelClassName="font-semibold text-slate-700"
       />
       <Legend
         formatter={(value) =>
-          value === 'engagement' ? '学习投入度' : '人机协同干预次数'
+          value === 'engagement' ? '课程活力' : '人机协同优化次数'
         }
         wrapperStyle={{ fontSize: '12px' }}
       />
@@ -213,7 +213,7 @@ const dualAxisChart = (
   </ResponsiveContainer>
 );
 
-// ── 各干预详细对比条形图（ECharts 柱状图） ─────────────────────
+// ── 各优化详细对比条形图（ECharts 柱状图） ─────────────────────
 const barSeries = radarDimensions.map(d => ({
   name: d.name,
   type: 'bar' as const,
@@ -228,7 +228,7 @@ interventionData.forEach((_, idx) => {
 
 const barOption = {
   tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
-  legend: { data: ['干预前', '干预后', '改善幅度'], bottom: 0 },
+  legend: { data: ['优化前', '优化后', '改善幅度'], bottom: 0 },
   xAxis: {
     type: 'category' as const,
     data: interventionData.map(i => i.type),
@@ -239,14 +239,14 @@ const barOption = {
   ],
   series: [
     {
-      name: '干预前', type: 'bar' as const, barGap: '0',
+      name: '优化前', type: 'bar' as const, barGap: '0',
       data: radarDimensions.map(d =>
         Math.round(interventionData.reduce((s, i) => s + (i.pre as any)[d.key], 0) / interventionData.length)
       ),
       itemStyle: { color: '#94a3b8', borderRadius: [4, 4, 0, 0] },
     },
     {
-      name: '干预后', type: 'bar' as const,
+      name: '优化后', type: 'bar' as const,
       data: radarDimensions.map(d =>
         Math.round(interventionData.reduce((s, i) => s + (i.post as any)[d.key], 0) / interventionData.length)
       ),
@@ -281,16 +281,16 @@ const academicNarrative = (
       <p>
         成效验证数据显示：<strong className="text-slate-800">课程生命力综合指标从期初的 {avgPre.reduce((s, d) => s + d.value, 0) / avgPre.length} 分提升至期末的 {avgPost.reduce((s, d) => s + d.value, 0) / avgPost.length} 分，
         整体提升 {overallUplift}%</strong>。
-        5 次教学干预中有 {effectiveInterventions}/{interventionData.length} 次达到有效标准（≥3 个维度提升 ≥8 分），
-        <strong className="text-emerald-600">干预有效率达 {effectivenessRate}%</strong>，
+        5 次课程优化中有 {effectiveInterventions}/{interventionData.length} 次达到有效标准（≥3 个维度提升 ≥8 分），
+        <strong className="text-emerald-600">优化有效率达 {effectivenessRate}%</strong>，
         表明人机协同决策机制能够持续产出高质量、可执行的教学优化方案。
       </p>
       <p>
         动态演化趋势进一步印证了系统的健康运行：{' '}
         <strong className="text-blue-600">学习投入度呈 S 型曲线稳步上升</strong>（从 55 至 88），
         而 {' '}
-        <strong className="text-amber-600">人机协同干预频率随时间递减</strong>（从初期每周 3-5 次降至后期 0-1 次），
-        说明系统通过持续的干预优化，使课程状态逐步趋于良性均衡，
+        <strong className="text-amber-600">人机协同优化频率随时间递减</strong>（从初期每周 3-5 次降至后期 0-1 次），
+        说明系统通过持续的优化迭代，使课程状态逐步趋于良性均衡，
         这正是持续改进机制成熟的典型标志。
       </p>
       <p className="text-xs text-slate-400 pt-2 border-t border-slate-100">
@@ -304,7 +304,7 @@ const academicNarrative = (
 const metricCards = [
   {
     icon: TrendingUp,
-    label: '课程生命力整体提升',
+    label: '课程活力整体提升',
     value: `+${overallUplift}%`,
     sub: `从 ${avgPre.reduce((s, d) => s + d.value, 0) / avgPre.length} → ${avgPost.reduce((s, d) => s + d.value, 0) / avgPost.length} 分`,
     color: 'text-emerald-600',
@@ -312,7 +312,7 @@ const metricCards = [
   },
   {
     icon: CheckCircle,
-    label: '干预有效率',
+    label: '优化有效率',
     value: `${effectivenessRate}%`,
     sub: `${effectiveInterventions}/${interventionData.length} 次达到有效标准`,
     color: 'text-blue-600',
@@ -320,7 +320,7 @@ const metricCards = [
   },
   {
     icon: Target,
-    label: '学习投入度提升',
+    label: '课程活力提升',
     value: `+33%`,
     sub: '从 55 分 → 88 分（S 型增长）',
     color: 'text-purple-600',
@@ -328,7 +328,7 @@ const metricCards = [
   },
   {
     icon: Sparkles,
-    label: '干预频率衰减比',
+    label: '优化频率衰减比',
     value: '-80%',
     sub: '系统趋于稳定，课程自主演进',
     color: 'text-amber-600',
@@ -378,18 +378,18 @@ export default function EfficacyEvalPage() {
       {/* 雷达图 + 柱状图 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 雷达图：Pre vs Post */}
-        <CardChart title="五维指标干预前后对比（雷达图）" option={radarRadarOption} height={420} />
+        <CardChart title="五维指标优化前后对比（雷达图）" option={radarRadarOption} height={420} />
 
         {/* 双轴折线图：学习投入度 + 干预次数 */}
-        <RechartsCard title="学习投入度与人机协同干预次数动态演化">
+        <RechartsCard title="课程活力与人机协同优化次数动态演化">
           {dualAxisChart}
         </RechartsCard>
       </div>
 
       {/* 柱状图：各维度改善 */}
-      <CardChart title="五维指标干预前后对比（柱状图 + 改善幅度）" option={barOption} height={380} />
+      <CardChart title="五维指标优化前后对比（柱状图 + 改善幅度）" option={barOption} height={380} />
 
-      {/* 各干预详细对比 */}
+      {/* 各优化详细对比 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {interventionData.map((intv) => {
           const improvements: number[] = [];

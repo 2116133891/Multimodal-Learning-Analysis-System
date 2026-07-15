@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; }
+  .slide {
+    width: 720pt;
+    height: 405pt;
+    background: #F4F6F6;
+    position: relative;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", "SimHei", sans-serif;
+    color: #2E4053;
+  }
+  .header-bar {
+    background: linear-gradient(90deg, #1C2833, #2E4053);
+    height: 48pt;
+    display: flex;
+    align-items: center;
+    padding-left: 36pt;
+  }
+  .header-bar h1 {
+    font-size: 20pt;
+    color: #FFFFFF;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 1pt;
+  }
+  .content {
+    display: flex;
+    padding: 20pt 30pt;
+    gap: 24pt;
+    height: calc(405pt - 48pt);
+  }
+  .left-panel {
+    flex: 0 0 42%;
+    background: #FFFFFF;
+    border-radius: 8pt;
+    box-shadow: 0 2pt 8pt rgba(0,0,0,0.06);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16pt;
+  }
+  .placeholder-img {
+    width: 100%;
+    height: 180pt;
+    background: linear-gradient(135deg, #E8EEF2, #D5DEE3);
+    border-radius: 6pt;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A9BA8;
+    font-size: 11pt;
+    border: 2pt dashed #B0BEC5;
+  }
+  .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .point {
+    margin-bottom: 16pt;
+  }
+  .point-title {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #1C2833;
+    margin-bottom: 4pt;
+    display: flex;
+    align-items: center;
+    gap: 6pt;
+  }
+  .point-title .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20pt;
+    height: 20pt;
+    background: #4A90D9;
+    color: #FFFFFF;
+    border-radius: 50%;
+    font-size: 10pt;
+    font-weight: bold;
+  }
+  .point-desc {
+    font-size: 10pt;
+    color: #555;
+    line-height: 1.5;
+    padding-left: 26pt;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header-bar">
+    <h1>模块一：赛事统计与规划</h1>
+  </div>
+  <div class="content">
+    <div class="left-panel">
+      <div class="placeholder-img">
+        比赛统计表截图<br/>（请替换实际图片）
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="point">
+        <div class="point-title"><span class="num">1</span>合理性审查</div>
+        <div class="point-desc">已对现有比赛统计表的分类维度进行了校对和优化</div>
+      </div>
+      <div class="point">
+        <div class="point-title"><span class="num">2</span>下半年赛事梳理</div>
+        <div class="point-desc">明确了下半年的核心赛事时间轴与关键节点</div>
+      </div>
+      <div class="point">
+        <div class="point-title"><span class="num">3</span>参赛意向确认</div>
+        <div class="point-desc">结合课题方向筛选高优参赛项目，待会上请老师定夺</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

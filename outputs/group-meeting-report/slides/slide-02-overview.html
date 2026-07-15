@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; }
+  .slide {
+    width: 720pt;
+    height: 405pt;
+    background: #F4F6F6;
+    position: relative;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", "SimHei", sans-serif;
+    color: #2E4053;
+  }
+  .header-bar {
+    background: linear-gradient(90deg, #1C2833, #2E4053);
+    height: 56pt;
+    display: flex;
+    align-items: center;
+    padding-left: 40pt;
+  }
+  .header-bar h1 {
+    font-size: 22pt;
+    color: #FFFFFF;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 2pt;
+  }
+  .content {
+    padding: 24pt 40pt;
+  }
+  .cards {
+    display: flex;
+    gap: 16pt;
+    margin-top: 8pt;
+  }
+  .card {
+    flex: 1;
+    background: #FFFFFF;
+    border-radius: 8pt;
+    padding: 18pt 16pt;
+    box-shadow: 0 2pt 8pt rgba(0,0,0,0.06);
+    border-top: 4pt solid #4A90D9;
+  }
+  .card.highlight {
+    border-top-color: #D4A843;
+    background: linear-gradient(180deg, #FFFDF5, #FFFFFF);
+  }
+  .card-icon {
+    font-size: 20pt;
+    margin-bottom: 6pt;
+  }
+  .card-title {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #1C2833;
+    margin-bottom: 6pt;
+    line-height: 1.3;
+  }
+  .card-desc {
+    font-size: 9.5pt;
+    color: #555;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header-bar">
+    <h1>本周工作总览</h1>
+  </div>
+  <div class="content">
+    <div class="cards">
+      <div class="card">
+        <div class="card-icon">🏆</div>
+        <div class="card-title">赛事规划</div>
+        <div class="card-desc">完成比赛统计表审查与下半年参赛目标锁定</div>
+      </div>
+      <div class="card">
+        <div class="card-icon">📊</div>
+        <div class="card-title">可视化建模</div>
+        <div class="card-desc">重构并绘制《课程持续改进机制总体研究框架》理论图</div>
+      </div>
+      <div class="card highlight">
+        <div class="card-icon">✨</div>
+        <div class="card-title">成果物化（超额完成）</div>
+        <div class="card-desc">深度研读申报书，自主研发并部署"多模态学习分析系统"至公网</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

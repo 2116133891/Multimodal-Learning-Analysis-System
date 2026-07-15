@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<style>
+  body { margin: 0; padding: 0; }
+  .slide {
+    width: 720pt;
+    height: 405pt;
+    background: #F4F6F6;
+    position: relative;
+    overflow: hidden;
+    font-family: "Microsoft YaHei", "PingFang SC", "SimHei", sans-serif;
+    color: #2E4053;
+  }
+  .header-bar {
+    background: linear-gradient(90deg, #1C2833, #2E4053);
+    height: 48pt;
+    display: flex;
+    align-items: center;
+    padding-left: 36pt;
+  }
+  .header-bar h1 {
+    font-size: 20pt;
+    color: #FFFFFF;
+    font-weight: bold;
+    margin: 0;
+    letter-spacing: 1pt;
+  }
+  .content {
+    display: flex;
+    padding: 20pt 30pt;
+    gap: 24pt;
+    height: calc(405pt - 48pt);
+  }
+  .left-panel {
+    flex: 0 0 38%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .motivation-box {
+    background: linear-gradient(135deg, #1C2833, #2E4053);
+    border-radius: 8pt;
+    padding: 20pt;
+    color: #FFFFFF;
+  }
+  .motivation-box .label {
+    font-size: 10pt;
+    color: #4A90D9;
+    font-weight: bold;
+    margin-bottom: 8pt;
+    letter-spacing: 1pt;
+  }
+  .motivation-box .text {
+    font-size: 12pt;
+    line-height: 1.6;
+    color: #E8EEF2;
+  }
+  .right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+  .results-title {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #1C2833;
+    margin-bottom: 10pt;
+    display: flex;
+    align-items: center;
+    gap: 6pt;
+  }
+  .results-title .icon { color: #D4A843; }
+  .result-item {
+    background: #FFFFFF;
+    border-radius: 6pt;
+    padding: 10pt 14pt;
+    margin-bottom: 8pt;
+    box-shadow: 0 1pt 4pt rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 10pt;
+  }
+  .result-item .num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22pt;
+    height: 22pt;
+    background: #4A90D9;
+    color: #FFFFFF;
+    border-radius: 50%;
+    font-size: 10pt;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+  .result-item .desc {
+    font-size: 10pt;
+    color: #555;
+    line-height: 1.4;
+  }
+  .screenshots {
+    margin-top: 10pt;
+    display: flex;
+    gap: 8pt;
+  }
+  .screenshot-placeholder {
+    flex: 1;
+    height: 70pt;
+    background: #E8EEF2;
+    border-radius: 6pt;
+    border: 2pt dashed #B0BEC5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #8A9BA8;
+    font-size: 8pt;
+  }
+</style>
+</head>
+<body>
+<div class="slide">
+  <div class="header-bar">
+    <h1>模块三：从研读到落地 — 多模态学习分析系统</h1>
+  </div>
+  <div class="content">
+    <div class="left-panel">
+      <div class="motivation-box">
+        <div class="label">📖 动机说明</div>
+        <div class="text">在通读申报书时，对"多模态学习分析系统"的设计理念非常感兴趣。为了更透彻地理解申报书的内容，我决定动手把这个系统搭建出来。</div>
+      </div>
+    </div>
+    <div class="right-panel">
+      <div class="results-title"><span class="icon">✨</span> 研发成果</div>
+      <div class="result-item">
+        <span class="num">1</span>
+        <span class="desc">前端与图表逻辑已初步搭建完成</span>
+      </div>
+      <div class="result-item">
+        <span class="num">2</span>
+        <span class="desc">实现数据大屏可视化</span>
+      </div>
+      <div class="result-item">
+        <span class="num">3</span>
+        <span class="desc">45分钟多模态时序融合分析</span>
+      </div>
+      <div class="result-item">
+        <span class="num">4</span>
+        <span class="desc">人机协同干预等核心模块</span>
+      </div>
+      <div class="screenshots">
+        <div class="screenshot-placeholder">系统界面截图 1</div>
+        <div class="screenshot-placeholder">系统界面截图 2</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

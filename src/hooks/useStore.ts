@@ -5,10 +5,11 @@ import type {
   CourseInfo, Student, LearningRecord, VitalityScore,
   OptimizationSuggestion, DiagnosticAlert, DataQualityMetrics,
   MultimodalFeatureVector, StudentMultimodalProfile, InterventionEffectiveness,
-  TeacherDecisionLog,
+  TeacherDecisionLog, CourseProfileSnapshot,
 } from '../types';
 import {
   generateMockStudentProfiles,
+  generateMockCourseProfiles,
 } from '../data/mockData';
 
 interface AppState {
@@ -23,6 +24,7 @@ interface AppState {
   multimodalFeatures: MultimodalFeatureVector[];
   studentProfiles: StudentMultimodalProfile[];
   interventions: InterventionEffectiveness[];
+  courseProfiles: CourseProfileSnapshot[];
 
   // AI 建议统一列表（单一数据源）
   suggestions: OptimizationSuggestion[];
@@ -57,6 +59,7 @@ export const useStore = create<AppState>((set, get) => ({
   multimodalFeatures: [],
   studentProfiles: [],
   interventions: [],
+  courseProfiles: [],
 
   // AI 建议 & 决策日志
   suggestions: [],
@@ -106,6 +109,7 @@ export const useStore = create<AppState>((set, get) => ({
         suggestions,
         studentProfiles,
         interventions,
+        courseProfiles: generateMockCourseProfiles(),
         loading: false,
       });
     } catch (e) {

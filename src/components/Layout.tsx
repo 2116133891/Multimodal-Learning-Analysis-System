@@ -19,8 +19,8 @@ const navItems: { id: Page; label: string; icon: typeof LayoutDashboard; section
   { id: 'ai', label: 'AI决策支持', icon: Brain },
   { id: 'vitality', label: '课程生命力', icon: HeartPulse },
   { id: 'improvement', label: '持续改进闭环', icon: Repeat2 },
-  { id: 'profile', label: '学习者画像', icon: User, section: '微观分析' },
-  { id: 'efficacy', label: '干预有效性', icon: BarChart3, section: '效果评估' },
+  { id: 'profile', label: '课程画像详情', icon: User, section: '多维评估' },
+  { id: 'efficacy', label: '干预成效验证', icon: BarChart3, section: '多维评估' },
 ];
 
 export default function Layout({ currentPage, onNavigate, children }: LayoutProps) {
@@ -38,8 +38,8 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
         <div className="p-4 border-b border-slate-200 flex items-center justify-between">
           {sidebarOpen && (
             <div>
-              <h1 className="text-lg font-bold text-slate-800">多模态学习分析</h1>
-              <p className="text-xs text-slate-500">课程管理系统</p>
+              <h1 className="text-lg font-bold text-slate-800">多模态课程分析</h1>
+              <p className="text-xs text-slate-500">课程持续改进管理系统</p>
             </div>
           )}
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
@@ -68,7 +68,7 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           {sidebarOpen && withSection.length > 0 && (
             <>
               <div className="pt-4 pb-2">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3">微观分析</p>
+              <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider px-3">多维评估</p>
               </div>
             </>
           )}
@@ -93,8 +93,8 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
 
         {sidebarOpen && (
           <div className="p-4 border-t border-slate-200">
-            <p className="text-xs text-slate-400">基于多模态学习分析</p>
-            <p className="text-xs text-slate-400">的高校课程持续改进机制</p>
+            <p className="text-xs text-slate-400">基于多模态数据联动的</p>
+            <p className="text-xs text-slate-400">高校课程持续改进机制</p>
           </div>
         )}
       </aside>

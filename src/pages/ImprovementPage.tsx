@@ -92,7 +92,7 @@ export default function ImprovementPage() {
       {/* 生命力改进效果对比 */}
       {scores.length > 0 ? (
         <CardChart
-          title="生命力改进效果对比（期初 vs 期末）"
+          title="课程状态优化效果对比（期初 vs 期末）"
           option={{
             tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
             legend: { data: ['期初', '期末'], bottom: 0 },

@@ -165,7 +165,7 @@ export default function DiagnosisPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-800">动态诊断</h2>
-        <p className="text-sm text-slate-500 mt-1">基于多模态学习分析的课程动态诊断 — 从"结果评价"向"过程诊断"转变</p>
+        <p className="text-sm text-slate-500 mt-1">基于多源数据联动的课程动态诊断 — 从"结果评价"向"过程诊断"转变</p>
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
