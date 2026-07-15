@@ -1,10 +1,33 @@
 // ===== AI 大模型 API 服务层（兼容 OpenAI 格式） =====
 // 用于生成《AI 课程持续改进诊断报告》
 
-const AI_API_KEY = import.meta.env.VITE_AI_API_KEY || '';
-const AI_BASE_URL = import.meta.env.VITE_AI_BASE_URL || 'https://api.openai.com';
+// ── 环境变量读取（兼容 Vite 和 Node.js 测试环境） ─────────
+function getEnvVar(key: string): string {
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+    return ((import.meta as any).env as Record<string, string>)?.[key] || '';
+  }
+  return process.env[key] || '';
+}
 
-const DEFAULT_MODEL = 'gpt-4o';
+const RAW_API_KEY = getEnvVar('VITE_AI_API_KEY');
+const RAW_BASE_URL = getEnvVar('VITE_AI_BASE_URL') || 'https://api.openai.com';
+const RAW_MODEL = getEnvVar('VITE_AI_MODEL') || 'agnes-2.0-flash';
+
+// ── URL 拼接：自动处理 /v1 前缀 ──────────────────────────
+function buildApiUrl(baseUrl: string): string {
+  const clean = baseUrl.replace(/\/+$/, '');
+  // 如果已包含 /chat/completions，直接返回
+  if (clean.endsWith('/chat/completions')) return clean;
+  // 如果已包含 /v1，补 /chat/completions
+  if (clean.includes('/v1')) return `${clean}/chat/completions`;
+  // 都不含，补全 /v1/chat/completions
+  return `${clean}/v1/chat/completions`;
+}
+
+const API_URL = buildApiUrl(RAW_BASE_URL);
+
+// ── 常量配置 ──────────────────────────────────────────────
+const DEFAULT_MODEL = 'agnes-2.0-flash';
 const MAX_TOKENS = 4096;
 const TEMPERATURE = 0.7;
 
@@ -87,49 +110,6 @@ function buildUserMessage(data: CourseDataPayload): string {
 
   // 最新周数据
   const latestWeek = courseProfiles.length > 0 ? courseProfiles[courseProfiles.length - 1] : null;
-  const firstWeek = courseProfiles.length > 0 ? courseProfiles[0] : null;
-
-  // 教师教学状态趋势
-  const teachingTrend = courseProfiles.map(cp => ({
-    week: cp.week,
-    teachingPace: cp.dimension.teachingState.teachingPace,
-    emotionalEngagement: cp.dimension.teachingState.emotionalEngagement,
-    movementFrequency: cp.dimension.teachingState.movementFrequency,
-    eyeContactRate: cp.dimension.teachingState.eyeContactRate,
-    questionRate: cp.dimension.teachingState.questionRate,
-    lectureRatio: cp.dimension.teachingState.lectureRatio,
-    pacingVariation: cp.dimension.teachingState.pacingVariation,
-  }));
-
-  // 资源利用率趋势
-  const resourceTrend = courseProfiles.map(cp => ({
-    week: cp.week,
-    slideCompletionRate: cp.dimension.resourceUtilization.slideCompletionRate,
-    difficultyReplayRate: cp.dimension.resourceUtilization.difficultyReplayRate,
-    videoWatchDepth: cp.dimension.resourceUtilization.videoWatchDepth,
-    contentCoverage: cp.dimension.resourceUtilization.contentCoverage,
-    resourceSatisfaction: cp.dimension.resourceUtilization.resourceSatisfaction,
-  }));
-
-  // 互动方式趋势
-  const interactionTrend = courseProfiles.map(cp => ({
-    week: cp.week,
-    qAndFFrequency: cp.dimension.interactionMethod.qAndFFrequency,
-    groupDiscussionHeat: cp.dimension.interactionMethod.groupDiscussionHeat,
-    danmakuActivity: cp.dimension.interactionMethod.danmakuActivity,
-    discussionBoardActivity: cp.dimension.interactionMethod.discussionBoardActivity,
-    livePollParticipation: cp.dimension.interactionMethod.livePollParticipation,
-    flipClassParticipation: cp.dimension.interactionMethod.flipClassParticipation,
-  }));
-
-  // 健康度趋势
-  const healthTrend = courseProfiles.map(cp => ({
-    week: cp.week,
-    health: cp.overallHealth,
-    grade: cp.healthGrade,
-    riskFlags: cp.riskFlags,
-    improvementSignals: cp.improvementSignals,
-  }));
 
   // 模块统计
   const moduleNames: Record<string, string> = {
@@ -165,6 +145,33 @@ function buildUserMessage(data: CourseDataPayload): string {
       count: vals.length,
     };
   });
+
+  // 教学状态趋势
+  const teachingTrend = courseProfiles.map(cp => ({
+    week: cp.week,
+    ...cp.dimension.teachingState,
+  }));
+
+  // 资源利用率趋势
+  const resourceTrend = courseProfiles.map(cp => ({
+    week: cp.week,
+    ...cp.dimension.resourceUtilization,
+  }));
+
+  // 互动方式趋势
+  const interactionTrend = courseProfiles.map(cp => ({
+    week: cp.week,
+    ...cp.dimension.interactionMethod,
+  }));
+
+  // 健康度趋势
+  const healthTrend = courseProfiles.map(cp => ({
+    week: cp.week,
+    health: cp.overallHealth,
+    grade: cp.healthGrade,
+    riskFlags: cp.riskFlags,
+    improvementSignals: cp.improvementSignals,
+  }));
 
   return `## 课程数据
 
@@ -239,8 +246,7 @@ export async function generateCourseImprovementReport(
     temperature?: number;
   }
 ): Promise<LLMResponse> {
-  const apiKey = AI_API_KEY.trim();
-  const baseUrl = AI_BASE_URL.trim().replace(/\/+$/, '');
+  const apiKey = RAW_API_KEY.trim();
 
   if (!apiKey) {
     throw new Error('未配置 AI API Key，请在 .env 文件中设置 VITE_AI_API_KEY');
@@ -248,14 +254,14 @@ export async function generateCourseImprovementReport(
 
   const userMessage = buildUserMessage(courseData);
 
-  const response = await fetch(`${baseUrl}/v1/chat/completions`, {
+  const response = await fetch(API_URL, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: options?.model || DEFAULT_MODEL,
+      model: options?.model || RAW_MODEL || DEFAULT_MODEL,
       messages: [
         { role: 'system', content: SYSTEM_PROMPT },
         { role: 'user', content: userMessage },
@@ -286,7 +292,7 @@ export async function generateCourseImprovementReport(
 
   return {
     content,
-    model: json.model || DEFAULT_MODEL,
+    model: json.model || RAW_MODEL || DEFAULT_MODEL,
     usage: {
       promptTokens: json.usage?.prompt_tokens || 0,
       completionTokens: json.usage?.completion_tokens || 0,
