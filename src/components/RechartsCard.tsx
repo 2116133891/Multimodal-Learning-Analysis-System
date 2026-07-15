@@ -66,7 +66,7 @@ export default function RechartsCard({
       </div>
 
       {/* 图表区域 */}
-      <div className="p-4 pt-3">{children}</div>
+      <div className="p-4 pt-3 min-h-[350px]">{children}</div>
     </motion.div>
   );
 }

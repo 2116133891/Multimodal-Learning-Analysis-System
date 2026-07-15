@@ -1,11 +1,12 @@
 // ===== AI 课程数据助教 (Data Copilot) — 悬浮聊天对话框 =====
 // 设计参考：Vercel AI Chat · Cursor Copilot · GitHub Copilot Chat
 // 功能：浮动按钮 → 展开面板 → 用户提问 → AI 回答（基于 mockData 数据分析）
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sparkles, Send, X, MessageSquare, Bot, User, Loader2,
   ChevronDown, ChevronUp, Brain, TrendingDown, TrendingUp, BarChart3,
+  GripVertical,
 } from 'lucide-react';
 import type { OptimizationSuggestion, DiagnosticAlert } from '../types';
 
@@ -189,6 +190,40 @@ export default function AICopilot({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // 拖拽状态
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartRef = useRef({ x: 0, y: 0 });
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    // 只在拖拽手柄上响应
+    const target = e.target as HTMLElement;
+    if (!target.closest('[data-drag-handle]')) return;
+    setIsDragging(true);
+    dragStartRef.current = {
+      x: e.clientX - dragOffset.x,
+      y: e.clientY - dragOffset.y,
+    };
+  }, [dragOffset]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      setDragOffset({
+        x: e.clientX - dragStartRef.current.x,
+        y: e.clientY - dragStartRef.current.y,
+      });
+    };
+    const handleMouseUp = () => setIsDragging(false);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [isDragging]);
+
   // 自动滚动到底部
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -249,7 +284,7 @@ export default function AICopilot({
   if (!isOpen) {
     return (
       <motion.div
-        className="fixed bottom-6 right-6 z-50"
+        className="fixed bottom-6 right-6 z-20"
         initial={{ opacity: 0, scale: 0 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ delay: 2, type: 'spring', stiffness: 300 }}
@@ -281,22 +316,46 @@ export default function AICopilot({
   // ── 聊天面板 ──
   return (
     <motion.div
-      className="fixed bottom-6 right-6 z-50 w-[380px] sm:w-[420px] max-w-[calc(100vw-2rem)] flex flex-col"
+      className="fixed bottom-6 right-6 z-30 w-[380px] sm:w-[420px] max-w-[calc(100vw-2rem)] flex flex-col"
       initial={{ opacity: 0, y: 24, scale: 0.95 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 24, scale: 0.95 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+      style={{
+        transform: isDragging
+          ? `translate(${dragOffset.x}px, ${dragOffset.y}px)`
+          : dragOffset.x !== 0 || dragOffset.y !== 0
+            ? `translate(${dragOffset.x}px, ${dragOffset.y}px)`
+            : undefined,
+        transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+      }}
     >
       <div className="flex-1 flex flex-col rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-xl shadow-2xl shadow-slate-500/10 overflow-hidden">
         {/* ── 面板头部 ── */}
         <div className="flex-shrink-0 px-4 py-3 bg-gradient-to-r from-violet-500/5 to-indigo-500/5 border-b border-slate-200/60 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
+            {/* 拖拽手柄 */}
+            <div
+              data-drag-handle
+              className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 transition-colors flex-shrink-0"
+              onMouseDown={handleMouseDown}
+              onTouchStart={(e) => {
+                const touch = e.touches[0];
+                setIsDragging(true);
+                dragStartRef.current = {
+                  x: touch.clientX - dragOffset.x,
+                  y: touch.clientY - dragOffset.y,
+                };
+              }}
+            >
+              <GripVertical size={14} />
+            </div>
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/20">
               <Brain size={16} className="text-white" />
             </div>
             <div>
               <h3 className="text-sm font-semibold text-slate-800">AI 课程数据助教</h3>
-              <p className="text-[10px] text-slate-400">基于多模态数据分析</p>
+              <p className="text-[10px] text-slate-400">拖拽标题栏移动位置</p>
             </div>
           </div>
           <div className="flex items-center gap-1">

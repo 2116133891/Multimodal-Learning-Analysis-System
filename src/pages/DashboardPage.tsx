@@ -501,8 +501,8 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════════
           核心指标卡片 — 5 列等宽 Grid
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-        <motion.div variants={itemVariants}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
+        <motion.div variants={itemVariants} className="h-full">
           <StatCard
             label="课程综合健康度"
             value={currentProfile?.health ?? healthScore}
@@ -517,7 +517,7 @@ export default function DashboardPage() {
           />
         </motion.div>
 
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full">
           <StatCard
             label="教师教学状态"
             value={currentTeaching?.emotion ?? 72}
@@ -532,7 +532,7 @@ export default function DashboardPage() {
           />
         </motion.div>
 
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full">
           <StatCard
             label="课程资源利用率"
             value={currentResource?.completion ?? 78}
@@ -547,7 +547,7 @@ export default function DashboardPage() {
           />
         </motion.div>
 
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full">
           <StatCard
             label="互动方式热度"
             value={currentInteraction?.group ?? 68}
@@ -562,7 +562,7 @@ export default function DashboardPage() {
           />
         </motion.div>
 
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full">
           <StatCard
             label="AI 多源融合"
             value={currentLatency}
