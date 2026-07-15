@@ -1,11 +1,10 @@
-// ===== 数据融合页面（重构：Recharts 学术图表 + Mock 降级） =====
+// ===== 数据融合页面（重构：课程级多模态时间轴对齐） =====
 import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../hooks/useStore';
 import RechartsCard from '../components/RechartsCard';
 import {
   GitMerge,
   Clock,
-  User,
   Loader2,
 } from 'lucide-react';
 import {
@@ -14,7 +13,6 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   Radar, AreaChart, Area,
 } from 'recharts';
-import { generateMockClassroomTimeSeries } from '../data/mockData';
 
 // ── 学术配色 ──────────────────────────────────────────────
 const COLORS = {
@@ -30,50 +28,50 @@ const COLORS = {
 
 const modalityLabels: Record<string, string> = {
   video_emotion: '教学状态监测',
-  text_semantic: '资源利用分析',
-  interaction_behavior: '互动行为追踪',
+  text_semantic: '平台资源质量',
+  interaction_behavior: '师生互动深度',
   traditional_data: '传统学习数据',
 };
 
 export default function FusionPage() {
-  const { records, multimodalFeatures, courseInfo, students, fetchData } = useStore();
+  const { records, multimodalFeatures, courseInfo, loading, fetchData } = useStore();
   const [selectedWeek, setSelectedWeek] = useState(8);
-  const [selectedStudent, setSelectedStudent] = useState('s001');
   const [timeSeriesData, setTimeSeriesData] = useState<any[]>([]);
   const [tsLoading, setTsLoading] = useState(false);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // ── 加载选中学生-周的时序数据（Mock 降级） ──────────────────
+  // ── 加载选中周的聚合时序数据（课程级） ──────────────────
   useEffect(() => {
-    if (!selectedStudent || students.length === 0) return;
     setTsLoading(true);
 
-    // 尝试从 API 获取（生产环境可能不可用）
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 秒超时
-
-    fetch(`/api/multimodal/time-series?studentId=${selectedStudent}&week=${selectedWeek}`, {
-      signal: controller.signal,
-    })
-      .then(r => {
-        if (!r.ok) throw new Error('API unavailable');
-        return r.json();
-      })
-      .then(data => {
-        setTimeSeriesData([...data]);
-        setTsLoading(false);
-      })
-      .catch(() => {
-        // API 不可用时，使用本地 Mock 数据
-        const mockTS = generateMockClassroomTimeSeries(selectedStudent, selectedWeek);
-        setTimeSeriesData([mockTS]);
-        setTsLoading(false);
-      })
-      .finally(() => {
-        clearTimeout(timeoutId);
-      });
-  }, [selectedStudent, selectedWeek, students.length]);
+    // 使用本地 Mock 数据（课程级聚合）
+    const mockTS = {
+      studentId: 'course-aggregate',
+      week: selectedWeek,
+      moduleId: selectedWeek <= 4 ? 'm1' : selectedWeek <= 8 ? 'm2' : selectedWeek <= 12 ? 'm3' : 'm4',
+      points: Array.from({ length: 10 }, (_, i) => {
+        const tMid = (i + 0.5) * 4.5;
+        const baseFocus = 0.5 + Math.sin(tMid * 0.15) * 0.2;
+        const baseInteraction = 5 + Math.floor(Math.random() * 8);
+        return {
+          timestamp: `T${Math.round(tMid)}m`,
+          videoEmotion: Math.min(1, Math.max(0, baseFocus + (Math.random() - 0.5) * 0.1)),
+          textSentiment: Math.min(1, Math.max(0, 0.5 + (Math.random() - 0.5) * 0.2)),
+          interactionCount: baseInteraction,
+        };
+      }),
+      fusionEngagementScore: Array.from({ length: 10 }, () => Math.floor(50 + Math.random() * 40)),
+      summary: {
+        avgVideoEmotion: 0.65,
+        avgTextSentiment: 0.55,
+        totalInteractions: 42,
+        engagementTrend: 'stable' as const,
+      },
+    };
+    setTimeSeriesData([mockTS]);
+    setTsLoading(false);
+  }, [selectedWeek]);
 
   // ── 按周统计三种模态的平均特征 ──────────────────────────
   const weeklyModalities = useMemo(() => {
@@ -161,10 +159,10 @@ export default function FusionPage() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-slate-800">数据融合</h2>
-        <p className="text-sm text-slate-500 mt-1">多源数据融合引擎 — 教学状态、资源利用、互动方式的时序对齐与融合表征</p>
+        <p className="text-sm text-slate-500 mt-1">课程级多模态数据融合引擎 — 教师教学状态、平台资源质量、师生互动深度的时间轴对齐与融合表征</p>
       </div>
 
-      {/* 周选择器 + 学生选择器 */}
+      {/* 周选择器 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex items-center gap-4 flex-wrap">
         <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
           <Clock size={16} />
@@ -179,27 +177,15 @@ export default function FusionPage() {
             <option key={i + 1} value={i + 1}>第{i + 1}周</option>
           ))}
         </select>
-        <label className="text-sm font-medium text-slate-600 flex items-center gap-2">
-          <User size={16} />
-          选择学生：
-        </label>
-        <select
-          value={selectedStudent}
-          onChange={e => setSelectedStudent(e.target.value)}
-          className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-        >
-          {students.map((s: any) => (
-            <option key={s.id} value={s.id}>{s.name}（{s.id}）</option>
-          ))}
-        </select>
         <span className="text-xs text-slate-400 ml-auto">
-          该周 {selectedFeatures.length} 名学生的融合特征
+          课程级多模态数据聚合（全班 {courseInfo?.totalStudents || 30} 人）
         </span>
       </div>
 
       {/* ── 主图表：四种模态特征在 16 周时间轴上的趋势 ───── */}
       <RechartsCard
-        title="四种模态特征在 16 周时间轴上的趋势对齐"
+        title="课程多模态特征 16 周趋势对齐"
+        description="教师教学状态 · 平台资源质量 · 师生互动深度 · 传统学习数据"
         toolbar={
           <div className="flex items-center gap-4 text-xs">
             <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.video }} />教学状态</span>
@@ -247,15 +233,15 @@ export default function FusionPage() {
         </AreaChart>
       </RechartsCard>
 
-      {/* ── 45 分钟课堂多模态时序对齐 ──────────────────── */}
+      {/* ── 45 分钟课堂多模态时序对齐（课程级聚合） ──────────── */}
       <RechartsCard
-        key={`timeline-${selectedStudent}-${selectedWeek}`}
-        title="45 分钟课堂多模态数据时序对齐"
+        key={`timeline-${selectedWeek}`}
+        title="45 分钟课堂多模态数据时序对齐（课程级聚合）"
         toolbar={
           <div className="flex items-center gap-4 text-xs">
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.video }} />视频专注度</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.text }} />交互频率</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.accent }} />情绪值</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.video }} />教师语速/走动</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.text }} />学生弹幕/抬头率</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-0.5 rounded" style={{ backgroundColor: COLORS.accent }} />课件PPT切换节奏</span>
           </div>
         }
       >
@@ -280,15 +266,15 @@ export default function FusionPage() {
               />
               <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
               <Line
-                type="monotone" dataKey="focus" name="视频专注度"
+                type="monotone" dataKey="focus" name="教师语速/走动"
                 stroke={COLORS.video} strokeWidth={2.5} dot={false} connectNulls
               />
               <Line
-                type="monotone" dataKey="interaction" name="交互频率"
+                type="monotone" dataKey="interaction" name="学生弹幕/抬头率"
                 stroke={COLORS.text} strokeWidth={2.5} dot={false} connectNulls
               />
               <Line
-                type="monotone" dataKey="emotion" name="情绪值"
+                type="monotone" dataKey="emotion" name="课件PPT切换节奏"
                 stroke={COLORS.accent} strokeWidth={2.5} dot={false} connectNulls
               />
             </LineChart>
@@ -330,7 +316,7 @@ export default function FusionPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 早融合 vs 晚融合 */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-          <h3 className="text-base font-semibold text-slate-800 mb-4">融合策略对比（第{selectedWeek}周）</h3>
+          <h3 className="text-base font-semibold text-slate-800 mb-4">融合策略对比（第{selectedWeek}周 · 课程级聚合）</h3>
           <div className="grid grid-cols-2 gap-4">
             <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
               <div className="flex items-center gap-2 mb-2">
@@ -363,7 +349,7 @@ export default function FusionPage() {
         {exampleFeature && (
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
             <h3 className="text-base font-semibold text-slate-800 mb-4">
-              学生 {exampleFeature.studentId} · 第{exampleFeature.week}周 模态特征
+              第{selectedWeek}周 · 课程模态特征雷达
             </h3>
             <div className="flex justify-center">
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={modalityRadarData}>
