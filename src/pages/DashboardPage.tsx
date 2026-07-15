@@ -89,16 +89,11 @@ function generateInteractionTrend() {
 
 function generateRadarData(week: number) {
   return [
-    { subject: '讲授语速', A: Math.min(100, 50 + week * 2.5), fullMark: 100 },
-    { subject: '情绪饱满度', A: Math.min(100, 48 + week * 2.8), fullMark: 100 },
-    { subject: '走动频次', A: Math.min(100, 30 + week * 1.5), fullMark: 100 },
-    { subject: '眼神交流', A: Math.min(100, 45 + week * 2.2), fullMark: 100 },
-    { subject: '提问频次', A: Math.min(100, 25 + week * 1.2), fullMark: 100 },
-    { subject: '课件完播', A: Math.min(100, 50 + week * 2.5), fullMark: 100 },
-    { subject: '视频深度', A: Math.min(100, 50 + week * 2), fullMark: 100 },
-    { subject: '小组讨论', A: Math.min(100, 35 + week * 3), fullMark: 100 },
-    { subject: '讨论区', A: Math.min(100, 40 + week * 2.5), fullMark: 100 },
-    { subject: '翻转课堂', A: Math.min(100, 40 + week * 3.5), fullMark: 100 },
+    { subject: '教学状态表现', A: Math.min(100, 50 + week * 2.5), fullMark: 100 },
+    { subject: '平台资源质量', A: Math.min(100, 48 + week * 2.2), fullMark: 100 },
+    { subject: '师生互动深度', A: Math.min(100, 45 + week * 2.8), fullMark: 100 },
+    { subject: '知识点掌握度', A: Math.min(100, 55 + week * 2.0), fullMark: 100 },
+    { subject: '课堂情感氛围', A: Math.min(100, 42 + week * 2.3), fullMark: 100 },
   ];
 }
 
@@ -581,7 +576,7 @@ export default function DashboardPage() {
           ═══════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div variants={itemVariants}>
-          <RechartsCard title="课程三维画像雷达" description={`第${selectedWeek}周多模态能力维度`} accent="blue" delay={5}>
+          <RechartsCard title="课程五维评价雷达" description="教学状态 · 资源质量 · 互动深度 · 知识掌握 · 情感氛围" accent="blue" delay={5}>
             <ResponsiveContainer width="100%" height={380}>
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
