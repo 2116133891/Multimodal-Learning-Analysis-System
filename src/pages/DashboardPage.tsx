@@ -5,7 +5,7 @@ import StatCard from '../components/StatCard';
 import CardChart from '../components/CardChart';
 import RechartsCard from '../components/RechartsCard';
 import {
-  TrendingUp, Users, AlertTriangle, Target, Activity,
+  TrendingUp, Users, AlertTriangle, Target, Activity, HeartPulse,
   Cpu, Database, Zap, Globe, Shield, Eye, Radio,
   BarChart3, Layers, Network, Mic, BookOpen, MessageSquare,
   Play, Headphones, Video, FileText, Download,

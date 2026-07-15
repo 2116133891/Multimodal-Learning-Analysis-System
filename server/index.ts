@@ -204,7 +204,6 @@ if (process.env.NODE_ENV === 'production' && !process.env.VERCEL) {
 // 本地开发时（无 VERCEL 环境变量），走传统 listen 模式。
 if (process.env.VERCEL) {
   // Serverless 模式：只导出，不调用 listen
-  export default app;
 } else {
   // 本地开发 / Docker 模式
   const PORT = process.env.PORT || 3001;
@@ -212,3 +211,6 @@ if (process.env.VERCEL) {
     console.log(`服务器运行在 http://localhost:${PORT}`);
   });
 }
+
+// 统一导出 app（Vercel 需要，本地开发不影响）
+export default app;
