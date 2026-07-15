@@ -7,6 +7,9 @@ import { useStore } from '../hooks/useStore';
 import StatCard from '../components/StatCard';
 import CardChart from '../components/CardChart';
 import RechartsCard from '../components/RechartsCard';
+import AICopilot from '../components/AICopilot';
+import ActionableInsightsBanner from '../components/ActionableInsightsBanner';
+import SmartCoursewareGenerator from '../components/SmartCoursewareGenerator';
 import {
   TrendingUp, TrendingDown, Minus, Users, AlertTriangle, Target, Activity,
   HeartPulse, Repeat2, Cpu, Database, Zap, Globe, Shield, Eye, Radio,
@@ -287,7 +290,7 @@ function MetricRow({ icon, label, value, unit, color, trend }: {
 // ═══════════════════════════════════════════════════════════
 
 export default function DashboardPage() {
-  const { courseInfo, records, alerts, vitalityScores, loading, fetchData } = useStore();
+  const { courseInfo, records, alerts, vitalityScores, courseProfiles, loading, fetchData } = useStore();
   const [healthScore, setHealthScore] = useState(75);
   const [liveLogs, setLiveLogs] = useState<Array<{ time: string; msg: string; category: string }>>([]);
   const [systemHealthData] = useState(generateSystemHealthData);
@@ -483,6 +486,17 @@ export default function DashboardPage() {
           </div>
         </div>
       </motion.div>
+
+      {/* ═══════════════════════════════════════════════════════
+          AI 微级行动建议横幅
+          ═══════════════════════════════════════════════════════ */}
+      <ActionableInsightsBanner
+        alerts={alerts}
+        suggestions={[]}
+        vitalityScores={vitalityScores}
+        courseProfiles={courseProfiles || []}
+        selectedWeek={selectedWeek}
+      />
 
       {/* ═══════════════════════════════════════════════════════
           核心指标卡片 — 5 列等宽 Grid
@@ -870,11 +884,11 @@ export default function DashboardPage() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          底部：课程模块 + 诊断告警 + 生命力趋势
+          底部：课程模块 + 诊断告警 + 生命力趋势 + AI 课件生成
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* 课程模块 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="lg:col-span-1">
           <RechartsCard title="课程模块" accent="indigo" delay={14}>
             <div className="space-y-2.5">
               {courseInfo?.modules.map((mod, i) => (
@@ -899,7 +913,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 诊断告警 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="lg:col-span-1">
           <RechartsCard title="课程健康预警" accent="amber" delay={15}>
             <div className="space-y-2.5">
               {alerts.slice(0, 5).map((alert, i) => (
@@ -927,7 +941,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 课程生命力趋势 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="lg:col-span-1">
           <RechartsCard title="课程生命力趋势" description="五维生命力综合评分" accent="purple" delay={16}>
             <div className="flex items-center gap-6 mb-2">
               <div className="flex items-baseline gap-1">
@@ -953,7 +967,22 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           </RechartsCard>
         </motion.div>
+
+        {/* AI 智能课件生成入口 */}
+        <motion.div variants={itemVariants} className="lg:col-span-1">
+          <SmartCoursewareGenerator suggestions={[]} selectedWeek={selectedWeek} />
+        </motion.div>
       </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          AI 课程数据助教 — 悬浮聊天入口
+          ═══════════════════════════════════════════════════════ */}
+      <AICopilot
+        suggestions={[]}
+        alerts={alerts}
+        healthScore={healthScore}
+        selectedWeek={selectedWeek}
+      />
     </motion.div>
   );
 }
