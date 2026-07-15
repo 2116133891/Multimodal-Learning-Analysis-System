@@ -190,7 +190,7 @@ export default function DiagnosisPage() {
             <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
               <span className="px-2 py-1 bg-slate-100 rounded-md">3 阶段</span>
               <span className="px-2 py-1 bg-slate-100 rounded-md">9 模态指标</span>
-              <span className="px-2 py-1 bg-slate-100 rounded-md">42 名学生</span>
+              <span className="px-2 py-1 bg-slate-100 rounded-md">30 人班级</span>
             </div>
           </div>
         </div>
