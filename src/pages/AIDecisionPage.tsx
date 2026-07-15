@@ -1,7 +1,15 @@
 // ===== AI决策支持页面（重构：人机协同 + 一键干预闭环） =====
 import { useEffect, useState } from 'react';
 import { useStore } from '../hooks/useStore';
-import { Brain, Check, X, Edit3, Clock, ChevronDown, Target, Sparkles, Send, Wand2, AlertTriangle, MessageSquare, Copy, CheckCircle2, Loader2 } from 'lucide-react';
+import { useToast } from '../components/ToastManager';
+import { generateCourseImprovementReport } from '../services/llmApi';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import {
+  Brain, Check, X, Edit3, Clock, ChevronDown, Target, Sparkles, Send, Wand2,
+  AlertTriangle, MessageSquare, Copy, CheckCircle2, Loader2,
+  Rocket, FileText, ShieldCheck,
+} from 'lucide-react';
 
 const categoryLabels: Record<string, string> = {
   rhythm: '教学节奏调整',
@@ -275,7 +283,8 @@ function InterventionModal({
 }
 
 export default function AIDecisionPage() {
-  const { suggestions, alerts, decisionLogs, fetchData, submitTeacherDecision } = useStore();
+  const { suggestions, alerts, decisionLogs, courseInfo, students, records, vitalityScores, alerts: alertList, multimodalFeatures, interventions, courseProfiles, studentProfiles, dataQuality, fetchData, submitTeacherDecision } = useStore();
+  const { addToast } = useToast();
   const [selectedSuggestion, setSelectedSuggestion] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [modifyText, setModifyText] = useState('');
@@ -283,6 +292,14 @@ export default function AIDecisionPage() {
   const [showSuccess, setShowSuccess] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
   const [handledAlerts, setHandledAlerts] = useState<Set<string>>(new Set());
+
+  // ── AI 深度课程诊断状态 ──────────────────────────────────
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportProgress, setReportProgress] = useState<'idle' | 'gathering' | 'analyzing' | 'rendering'>('idle');
+  const [reportContent, setReportContent] = useState('');
+  const [reportModel, setReportModel] = useState('');
+  const [reportUsage, setReportUsage] = useState<{ promptTokens: number; completionTokens: number; totalTokens: number } | null>(null);
+  const [reportError, setReportError] = useState('');
 
   // 干预模态框状态
   const [showInterventionModal, setShowInterventionModal] = useState(false);
@@ -341,6 +358,63 @@ export default function AIDecisionPage() {
   // 高风险预警（severity === 'high' 且未处理）
   const highRiskAlerts = alerts.filter(a => a.severity === 'high' && !handledAlerts.has(a.id));
 
+  // ── AI 深度诊断报告生成 ──────────────────────────────────
+  const handleGenerateReport = async () => {
+    setReportLoading(true);
+    setReportError('');
+    setReportContent('');
+    setReportProgress('gathering');
+
+    try {
+      // 步骤 1: 准备数据
+      setReportProgress('gathering');
+      const payload = {
+        courseInfo,
+        students,
+        records,
+        vitalityScores,
+        alerts: alertList,
+        multimodalFeatures,
+        suggestions,
+        interventions,
+        courseProfiles,
+        studentProfiles,
+        dataQuality: dataQuality || undefined,
+      };
+
+      // 步骤 2: 调用 LLM
+      setReportProgress('analyzing');
+      const report = await generateCourseImprovementReport(payload);
+
+      // 步骤 3: 渲染
+      setReportProgress('rendering');
+      setReportContent(report.content);
+      setReportModel(report.model);
+      setReportUsage(report.usage);
+    } catch (err: any) {
+      const msg = err?.message || '未知错误';
+      setReportError(msg);
+
+      if (msg.includes('未配置') || msg.includes('API Key')) {
+        addToast({
+          type: 'warning',
+          title: 'API 未配置',
+          message: '请在项目根目录的 .env 文件中设置 VITE_AI_API_KEY 和 VITE_AI_BASE_URL 变量。',
+          duration: 8000,
+        });
+      } else {
+        addToast({
+          type: 'error',
+          title: '报告生成失败',
+          message: `无法连接到 AI 服务：${msg}`,
+          duration: 8000,
+        });
+      }
+    } finally {
+      setReportLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -355,10 +429,134 @@ export default function AIDecisionPage() {
       {/* 成功提示 */}
       {showSuccess && (
         <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 animate-pulse">
-          <Check size={20} className="text-emerald-600 flex-shrink-0" />
+          <Check size={20} className="text-emerald-600 shrink-0" />
           <p className="text-sm text-emerald-700">{successMsg}</p>
         </div>
       )}
+
+      {/* ═══ AI 深度课程诊断（真实大模型驱动） ═══ */}
+      <div className="rounded-2xl border-2 border-violet-200 shadow-lg overflow-hidden bg-gradient-to-br from-violet-50 via-white to-indigo-50">
+        {/* 顶部装饰条 */}
+        <div className="h-1.5 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-indigo-500" />
+
+        <div className="p-6">
+          {/* 标题区 */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-violet-100 rounded-xl shadow-sm">
+                <Rocket size={22} className="text-violet-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  AI 深度课程诊断
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-violet-100 text-violet-700 rounded-full text-[10px] font-semibold">
+                    <Sparkles size={10} />
+                    真实大模型驱动
+                  </span>
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  基于多源数据联动分析 · 资深教育测量学专家角色 · 自动生成《课程持续改进诊断报告》
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGenerateReport}
+              disabled={reportLoading}
+              className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg whitespace-nowrap"
+            >
+              {reportLoading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  {reportProgress === 'gathering' ? '准备数据中...' : reportProgress === 'analyzing' ? 'AI 深度分析中...' : '渲染报告中...'}
+                </>
+              ) : (
+                <>
+                  <Sparkles size={16} />
+                  生成本周课程改进报告
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* 报告展示区 */}
+          {reportLoading && reportContent === '' && (
+            <div className="py-16 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-violet-100 mb-4">
+                <Brain size={32} className="text-violet-600 animate-pulse" />
+              </div>
+              <p className="text-sm font-medium text-slate-600">
+                {reportProgress === 'gathering' ? '正在整合多源课程数据...' : reportProgress === 'analyzing' ? 'AI 专家正在深度分析课程状态...' : '正在渲染诊断报告...'}
+              </p>
+              <p className="text-xs text-slate-400 mt-1">预计需要 10-30 秒</p>
+              {/* 进度条动画 */}
+              <div className="mt-4 mx-auto w-64 bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full animate-[progress_2s_ease-in-out_infinite]" style={{ width: '60%' }} />
+              </div>
+            </div>
+          )}
+
+          {/* 错误状态 */}
+          {reportError && (
+            <div className="p-5 bg-red-50 border border-red-200 rounded-xl">
+              <div className="flex items-start gap-3">
+                <AlertTriangle size={20} className="text-red-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-red-800">报告生成失败</p>
+                  <p className="text-xs text-red-600 mt-1 leading-relaxed">{reportError}</p>
+                  <div className="mt-3 p-3 bg-white rounded-lg border border-red-100">
+                    <p className="text-xs text-slate-500 font-medium mb-1">排查建议：</p>
+                    <ul className="text-xs text-slate-600 space-y-1 list-disc list-inside">
+                      <li>检查 .env 文件中的 <code className="px-1 py-0.5 bg-slate-100 rounded text-violet-600">VITE_AI_API_KEY</code> 是否已配置</li>
+                      <li>确认 <code className="px-1 py-0.5 bg-slate-100 rounded text-violet-600">VITE_AI_BASE_URL</code> 指向兼容 OpenAI 格式的 API 端点</li>
+                      <li>检查网络连接是否正常</li>
+                      <li>如使用第三方代理，确认 API Key 有效且额度充足</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 报告内容 */}
+          {reportContent && (
+            <div>
+              {/* 报告元信息 */}
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200">
+                <div className="flex items-center gap-3 text-xs text-slate-500">
+                  <ShieldCheck size={14} className="text-violet-500" />
+                  <span>模型：<strong className="text-slate-700">{reportModel || 'N/A'}</strong></span>
+                  {reportUsage && (
+                    <>
+                      <span>·</span>
+                      <span>输入 {reportUsage.promptTokens} tokens</span>
+                      <span>·</span>
+                      <span>输出 {reportUsage.completionTokens} tokens</span>
+                    </>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(reportContent);
+                    addToast({ type: 'success', title: '已复制', message: '报告内容已复制到剪贴板', duration: 2000 });
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs text-slate-600 hover:bg-slate-50 transition-colors"
+                >
+                  <Copy size={12} />
+                  复制报告
+                </button>
+              </div>
+
+              {/* Markdown 渲染的报告 */}
+              <div className="prose prose-sm max-w-none prose-headings:text-slate-800 prose-h2:text-base prose-h2:font-bold prose-h2:border-b prose-h2:border-slate-200 prose-h2:pb-2 prose-h3:text-sm prose-h3:font-semibold prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-slate-800 prose-ul:list-disc prose-ol:list-decimal prose-table:text-xs prose-th:bg-slate-50 prose-th:text-slate-700 prose-th:border prose-th:border-slate-200 prose-td:border prose-td:border-slate-200 prose-td:px-2 prose-td:py-1.5">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {reportContent}
+                </ReactMarkdown>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* 统计 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
