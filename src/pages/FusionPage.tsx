@@ -195,7 +195,8 @@ export default function FusionPage() {
           </div>
         }
       >
-        <AreaChart data={weeklyModalities} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
+        <div className="h-96">
+          <AreaChart data={weeklyModalities} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
           <defs>
             <linearGradient id="gradVideo" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor={COLORS.video} stopOpacity={0.15} />
@@ -231,6 +232,7 @@ export default function FusionPage() {
           <Area type="monotone" dataKey="interaction" name="互动行为" stroke={COLORS.interaction} strokeWidth={2.5} fill="url(#gradInteraction)" dot={false} />
           <Area type="monotone" dataKey="traditional" name="传统数据" stroke={COLORS.traditional} strokeWidth={2.5} fill="url(#gradTraditional)" dot={false} />
         </AreaChart>
+        </div>
       </RechartsCard>
 
       {/* ── 45 分钟课堂多模态时序对齐（课程级聚合） ──────────── */}
@@ -251,33 +253,35 @@ export default function FusionPage() {
             <div className="text-sm text-slate-400">加载时序数据中...</div>
           </div>
         ) : classTimelineData.length > 0 ? (
-          <>
-            <LineChart key={`lc-${selectedStudent}-${selectedWeek}`} data={classTimelineData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }} isAnimationActive={true} animationDuration={1000} animationEasing="ease-out">
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis dataKey="time" tick={{ fill: COLORS.slate, fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
-              <YAxis domain={[0, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
-              <RTooltip
-                contentStyle={{
-                  borderRadius: '8px',
-                  border: '1px solid #e2e8f0',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                  fontSize: '12px',
-                }}
-              />
-              <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
-              <Line
-                type="monotone" dataKey="focus" name="教师语速/走动"
-                stroke={COLORS.video} strokeWidth={2.5} dot={false} connectNulls
-              />
-              <Line
-                type="monotone" dataKey="interaction" name="学生弹幕/抬头率"
-                stroke={COLORS.text} strokeWidth={2.5} dot={false} connectNulls
-              />
-              <Line
-                type="monotone" dataKey="emotion" name="课件PPT切换节奏"
-                stroke={COLORS.accent} strokeWidth={2.5} dot={false} connectNulls
-              />
-            </LineChart>
+          <div className="space-y-3">
+            <div className="h-80">
+              <LineChart key={`lc-${selectedWeek}`} data={classTimelineData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }} isAnimationActive={true} animationDuration={1000} animationEasing="ease-out">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="time" tick={{ fill: COLORS.slate, fontSize: 11 }} axisLine={{ stroke: '#e2e8f0' }} />
+                <YAxis domain={[0, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+                <RTooltip
+                  contentStyle={{
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                    fontSize: '12px',
+                  }}
+                />
+                <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
+                <Line
+                  type="monotone" dataKey="focus" name="教师语速/走动"
+                  stroke={COLORS.video} strokeWidth={2.5} dot={false} connectNulls
+                />
+                <Line
+                  type="monotone" dataKey="interaction" name="学生弹幕/抬头率"
+                  stroke={COLORS.text} strokeWidth={2.5} dot={false} connectNulls
+                />
+                <Line
+                  type="monotone" dataKey="emotion" name="课件PPT切换节奏"
+                  stroke={COLORS.accent} strokeWidth={2.5} dot={false} connectNulls
+                />
+              </LineChart>
+            </div>
             {/* 融合得分摘要 */}
             {fusionScoreSeries && (
               <div className="mt-4 p-3 bg-slate-50 rounded-lg grid grid-cols-3 gap-4 text-center">
@@ -304,9 +308,9 @@ export default function FusionPage() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         ) : (
-          <div className="flex items-center justify-center h-[350px]">
+          <div className="flex items-center justify-center h-80">
             <div className="text-sm text-slate-400">暂无时序数据</div>
           </div>
         )}
@@ -351,7 +355,7 @@ export default function FusionPage() {
             <h3 className="text-base font-semibold text-slate-800 mb-4">
               第{selectedWeek}周 · 课程模态特征雷达
             </h3>
-            <div className="flex justify-center">
+            <div className="flex justify-center h-80">
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={modalityRadarData}>
                 <PolarGrid stroke="#e2e8f0" />
                 <PolarAngleAxis dataKey="modality" tick={{ fill: COLORS.slate, fontSize: 11 }} />

@@ -302,7 +302,7 @@ export const mockSuggestions: OptimizationSuggestion[] = [
     id: 'sug5', moduleId: 'm3', week: 11, category: 'rhythm', priority: 'low',
     title: '调整小组协作节奏',
     description: '第11周交互行为数据显示小组项目中部分学生贡献度不均衡，但教师反馈当前分组方式效果良好。',
-    dataEvidence: ['3名学生贡献度超过70%', '讨论区活跃学生集中在5人'],
+    dataEvidence: ['部分学习者贡献度超过70%', '讨论区活跃学习者集中在5人'],
     confidenceScore: 0.55,
     attributionAnalysis: {
       primaryFactor: '小组分工不均，但整体协作氛围良好',
@@ -361,8 +361,8 @@ export const mockSuggestions: OptimizationSuggestion[] = [
   {
     id: 'sug9', moduleId: 'm2', week: 6, category: 'task', priority: 'high',
     title: '根据线上讨论区语义分析，建议线下翻转课堂重新分组',
-    description: '线上讨论区文本语义聚类分析发现：A 同学和 B 同学在"透视基础"话题下发言语义相似度达 0.78，建议异质分组。',
-    dataEvidence: ['张明 & 李华语义相似度 0.78（同水平层级）', '陈静为"透视基础"模块最高分学生（95 分）', '当前同质分组导致小组产出效率下降 35%'],
+    description: '线上讨论区文本语义聚类分析发现：部分学习者在"透视基础"话题下发言语义相似度达 0.78，建议异质分组。',
+    dataEvidence: ['语义相似学生群体占比 40%', '张同学为"透视基础"模块最高分学习者（95 分）', '当前同质分组导致小组产出效率下降 35%'],
     confidenceScore: 0.88,
     attributionAnalysis: {
       primaryFactor: '当前小组为随机分配，未考虑学生能力差异与互补性',
@@ -392,15 +392,15 @@ export const mockSuggestions: OptimizationSuggestion[] = [
 // ===================== 诊断告警 =====================
 
 export const mockAlerts: DiagnosticAlert[] = [
-  { id: 'a1', week: 3, type: 'low_engagement', severity: 'high', title: '参与度显著下降', description: '第3周整体参与度从第2周的78分降至62分，视频专注度降至42%，讨论区负面情绪增多。', moduleId: 'm1' },
-  { id: 'a2', week: 6, type: 'knowledge_gap', severity: 'high', title: '造型基础掌握不足', description: '第6周学习成果数据显示30%学生在造型基础考核中得分低于70分。', moduleId: 'm2' },
-  { id: 'a3', week: 6, type: 'performance_drop', severity: 'medium', title: '课堂互动率降低', description: '第6-7周课堂互动参与率连续两周下降，从平均85次/周降至55次/周。', moduleId: 'm2' },
-  { id: 'a4', week: 10, type: 'anomaly', severity: 'medium', title: '讨论区发帖量异常激增', description: '第10周讨论区发帖量较前两周增长40%，文本情感分析显示积极情绪占比达78%。', moduleId: 'm3' },
-  { id: 'a5', week: 14, type: 'low_engagement', severity: 'medium', title: '创作阶段迷茫感', description: '第14周综合创作初期，学生平均参与度仅58分，文本分析显示"迷茫"关键词出现频率增加3倍。', moduleId: 'm4' },
-  { id: 'a6', week: 15, type: 'knowledge_gap', severity: 'low', title: '作品评价标准理解偏差', description: '第15周教师评价中发现部分学生对作品评价标准理解不一致。', moduleId: 'm4' },
-  { id: 'a7', week: 3, type: 'anomaly', severity: 'high', title: '线上→线下知识断层预警', description: '线上视频第3章"色彩三要素"困惑表情占比42%（均值12%），课前测验通过率仅35%。', moduleId: 'm1' },
-  { id: 'a8', week: 6, type: 'performance_drop', severity: 'medium', title: '翻转课堂分组效率预警', description: '线上讨论区语义聚类显示当前小组存在严重同质化，导致小组任务产出效率下降35%。', moduleId: 'm2' },
-  { id: 'a9', week: 10, type: 'low_engagement', severity: 'high', title: '线上预习严重不足，线下需转型', description: '第10周线上视频完播率从88%骤降至52%，"后印象派"段落重播率67%。', moduleId: 'm3' },
+  { id: 'a1', week: 3, type: 'low_engagement', severity: 'high', title: '课程整体参与度显著下降', description: '第3周课程整体参与度从第2周的78分降至62分，教师教学状态监测数据表明课堂专注度下降，平台资源文本语义情感分析显示讨论区负面情绪增多。', moduleId: 'm1' },
+  { id: 'a2', week: 6, type: 'knowledge_gap', severity: 'high', title: '造型基础知识点掌握不足', description: '第6周学习成果数据显示30%的学习记录在造型基础考核中得分低于70分，知识点掌握度维度预警。', moduleId: 'm2' },
+  { id: 'a3', week: 6, type: 'performance_drop', severity: 'medium', title: '课程课堂互动频次降低', description: '第6-7周课程师生互动频次连续两周下降，从平均85次/周降至55次/周，师生互动深度维度需关注。', moduleId: 'm2' },
+  { id: 'a4', week: 10, type: 'anomaly', severity: 'medium', title: '课程讨论区发帖量异常激增', description: '第10周课程讨论区发帖量较前两周增长40%，文本语义情感分析显示积极情绪占比达78%，需评估是否为有效互动。', moduleId: 'm3' },
+  { id: 'a5', week: 14, type: 'low_engagement', severity: 'medium', title: '课程创作阶段整体迷茫感', description: '第14周课程综合创作初期，学习参与度平均仅58分，文本情感分析显示"迷茫""不确定"关键词出现频率增加3倍。', moduleId: 'm4' },
+  { id: 'a6', week: 15, type: 'knowledge_gap', severity: 'low', title: '课程作品评价标准理解偏差', description: '第15周课程教师评价中发现部分学习记录对作品评价标准理解不一致，知识点掌握度维度存在分歧。', moduleId: 'm4' },
+  { id: 'a7', week: 3, type: 'anomaly', severity: 'high', title: '课程线上→线下知识断层预警', description: '线上视频第3章"色彩三要素"教学状态监测显示困惑表情占比42%（课程均值12%），课前测验通过率仅35%，存在明显知识断层。', moduleId: 'm1' },
+  { id: 'a8', week: 6, type: 'performance_drop', severity: 'medium', title: '课程翻转课堂分组效率预警', description: '课程线上讨论区文本语义聚类显示当前分组存在严重同质化，导致小组任务产出效率下降35%，师生互动深度受影响。', moduleId: 'm2' },
+  { id: 'a9', week: 10, type: 'low_engagement', severity: 'high', title: '课程线上预习严重不足', description: '第10周课程线上视频完播率从88%骤降至52%，"后印象派"段落重播率67%，平台资源利用率维度预警。', moduleId: 'm3' },
 ];
 
 // ===================== 数据质量指标 =====================

@@ -624,9 +624,9 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════════
           第二行：教学 + 资源 + 互动（三列）
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* 教师教学状态 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
           <RechartsCard title="教师教学状态" accent="emerald" delay={7}>
             <div className="space-y-4">
               <MetricRow icon={<Play size={14} />} label="讲授语速" value={currentTeaching?.pace ?? 70} unit="%" color="emerald" trend="up" />
@@ -642,7 +642,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 课程资源利用率 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
           <RechartsCard title="课程资源利用率" accent="purple" delay={8}>
             <div className="space-y-4">
               <MetricRow icon={<Video size={14} />} label="课件完播率" value={currentResource?.completion ?? 78} unit="%" color="purple" trend="up" />
@@ -657,7 +657,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 互动方式热度 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
           <RechartsCard title="互动方式与热度" accent="amber" delay={9}>
             <div className="space-y-4">
               <MetricRow icon={<Users size={14} />} label="小组讨论" value={currentInteraction?.group ?? 68} unit="分" color="amber" trend="up" />
@@ -676,9 +676,9 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════════
           第三行：风险 + 改善 + 系统监控
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
         {/* 风险标签 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
           <RechartsCard title="风险识别" accent="red" delay={10}>
             <div className="space-y-2.5">
               {riskTags.length > 0 ? (
@@ -706,7 +706,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 改善信号 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
           <RechartsCard title="改善信号" accent="emerald" delay={11}>
             <div className="space-y-2.5">
               {improvementSignals.length > 0 ? (
@@ -734,7 +734,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 系统运行监控 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
           <RechartsCard title="系统运行监控" accent="cyan" delay={12}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
@@ -781,9 +781,9 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════════
           第四行：数据流 + 实时日志
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
         {/* 实时数据吞吐量 */}
-        <motion.div variants={itemVariants}>
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
           <RechartsCard
             title="多源数据融合吞吐"
             description={`${currentThroughput} KB/s 实时吞吐`}
@@ -822,8 +822,8 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 实时多模态数据流 — 暗色主题 */}
-        <motion.div variants={itemVariants}>
-          <div className="relative rounded-2xl border border-slate-700/60 bg-slate-900/80 backdrop-blur-xl shadow-sm overflow-hidden group hover:border-slate-600/60 transition-colors duration-300">
+        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
+          <div className="relative rounded-2xl border border-slate-700/60 bg-slate-900/80 backdrop-blur-xl shadow-sm overflow-hidden group hover:border-slate-600/60 transition-colors duration-300 flex flex-col">
             {/* 顶部渐变条 */}
             <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 via-cyan-500 to-blue-500" />
 
@@ -881,9 +881,9 @@ export default function DashboardPage() {
       {/* ═══════════════════════════════════════════════════════
           底部：课程模块 + 诊断告警 + 生命力趋势 + AI 课件生成
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
         {/* 课程模块 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1">
+        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
           <RechartsCard title="课程模块" accent="indigo" delay={14}>
             <div className="space-y-2.5">
               {courseInfo?.modules.map((mod, i) => (
@@ -908,7 +908,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 诊断告警 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1">
+        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
           <RechartsCard title="课程健康预警" accent="amber" delay={15}>
             <div className="space-y-2.5">
               {alerts.slice(0, 5).map((alert, i) => (
@@ -936,7 +936,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 课程生命力趋势 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1">
+        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
           <RechartsCard title="课程生命力趋势" description="五维生命力综合评分" accent="purple" delay={16}>
             <div className="flex items-center gap-6 mb-2">
               <div className="flex items-baseline gap-1">
@@ -964,7 +964,7 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* AI 智能课件生成入口 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1">
+        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
           <SmartCoursewareGenerator suggestions={[]} selectedWeek={selectedWeek} />
         </motion.div>
       </div>
