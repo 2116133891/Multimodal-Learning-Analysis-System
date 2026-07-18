@@ -1,5 +1,6 @@
 {
-  "name": "multimodal-course-system",
+  "name": "cqiml-system",
+  "displayName": "多模态课程持续改进系统",
   "private": true,
   "version": "1.0.0",
   "type": "module",

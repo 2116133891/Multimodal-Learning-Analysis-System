@@ -1,18 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Layout from './components/Layout';
 import DashboardPage from './pages/DashboardPage';
 import CollectionPage from './pages/CollectionPage';
+import DataHubPage from './pages/DataHubPage';
 import FusionPage from './pages/FusionPage';
 import DiagnosisPage from './pages/DiagnosisPage';
 import AIDecisionPage from './pages/AIDecisionPage';
 import VitalityPage from './pages/VitalityPage';
 import ImprovementPage from './pages/ImprovementPage';
-import StudentProfilePage from './pages/StudentProfilePage';
+import CourseProfilePage from './pages/CourseProfilePage';
 import EfficacyEvalPage from './pages/EfficacyEvalPage';
 import { ToastProvider } from './components/ToastManager';
-import RealtimeAlertTimer from './components/RealtimeAlertTimer';
 
-type Page = 'dashboard' | 'collection' | 'fusion' | 'diagnosis' | 'ai' | 'vitality' | 'improvement' | 'profile' | 'efficacy';
+type Page = 'dashboard' | 'collection' | 'datahub' | 'fusion' | 'diagnosis' | 'ai' | 'vitality' | 'improvement' | 'profile' | 'efficacy';
 
 function AppContent() {
   const [currentPage, setCurrentPage] = useState<Page>('dashboard');
@@ -27,12 +27,13 @@ function AppContent() {
     switch (currentPage) {
       case 'dashboard': return <DashboardPage />;
       case 'collection': return <CollectionPage />;
+      case 'datahub': return <DataHubPage />;
       case 'fusion': return <FusionPage />;
       case 'diagnosis': return <DiagnosisPage />;
       case 'ai': return <AIDecisionPage />;
       case 'vitality': return <VitalityPage />;
       case 'improvement': return <ImprovementPage />;
-      case 'profile': return <StudentProfilePage />;
+      case 'profile': return <CourseProfilePage />;
       case 'efficacy': return <EfficacyEvalPage />;
       default: return <DashboardPage />;
     }
@@ -48,7 +49,6 @@ function AppContent() {
 function App() {
   return (
     <ToastProvider>
-      <RealtimeAlertTimer />
       <AppContent />
     </ToastProvider>
   );

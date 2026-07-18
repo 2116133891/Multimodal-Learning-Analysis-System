@@ -326,11 +326,38 @@ export interface InteractionMethod {
   flipClassParticipation: number; // 翻转课堂参与率（%）
 }
 
-// 课程画像综合维度
+// 教学方法维度（新增第五维度）
+export interface TeachingMethod {
+  caseTeachingScore: number;    // 案例教学得分（案例 richness、相关性）
+  flippedClassScore: number;    // 翻转课堂得分（课前-课中-课后连贯性）
+  projectBasedScore: number;    // 项目驱动得分（项目完成度、创新性）
+  scaffoldedLearningScore: number; // 支架式教学得分（脚手架有效性）
+  cooperativeLearningScore: number; // 合作学习得分（小组协作质量）
+  inquiryBasedScore: number;    // 探究式学习得分（学生自主探究程度）
+  differentiationScore: number; // 差异化教学得分（分层教学适配度）
+  formativeAssessmentScore: number; // 形成性评价得分（过程性反馈频率）
+}
+
+// 教学环境维度（新增第六维度）
+export interface TeachingEnvironment {
+  classroomTemperature: number;   // 教室温度舒适度（标准化 0-100）
+  lightingLevel: number;          // 光照强度评分
+  acousticsQuality: number;       // 声学环境质量（噪音水平、回声控制）
+  seatingArrangement: number;     // 座位排列合理性（U型、小组型、传统型）
+  ventilationQuality: number;     // 通风换气质量
+  equipmentFunctionality: number; // 教学设备完好率（投影仪、音响、空调）
+  roomCapacityRatio: number;      // 教室容量利用率（%）
+  accessibilityScore: number;    // 无障碍设施评分
+  environmentalSatisfaction: number; // 学生对教学环境的满意度
+}
+
+// 课程画像综合维度（六维）
 export interface CourseProfileDimension {
   teachingState: TeachingState;
   resourceUtilization: ResourceUtilization;
   interactionMethod: InteractionMethod;
+  teachingMethod: TeachingMethod; // 第五维度：教学方法
+  teachingEnvironment: TeachingEnvironment; // 第六维度：教学环境
 }
 
 // 课程画像周度快照
@@ -341,6 +368,8 @@ export interface CourseProfileSnapshot {
   healthGrade: 'A' | 'B' | 'C' | 'D'; // 健康等级
   riskFlags: string[];           // 风险标签
   improvementSignals: string[];  // 改善信号
+  pdcaStage: 'plan' | 'do' | 'check' | 'act'; // PDCA 循环阶段
+  obeAchievement: number;        // OBE 目标达成度 0-100
 }
 
 // ===================== 干预有效性评估 =====================

@@ -171,33 +171,35 @@ export default function StudentProfilePage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── 五维能力雷达图 ──────────────────────────────── */}
         <RechartsCard title="五维能力雷达图">
-          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
-            <PolarGrid stroke="#e2e8f0" />
-            <PolarAngleAxis dataKey="subject" tick={{ fill: COLORS.slate, fontSize: 13 }} />
-            <PolarRadiusAxis
-              angle={30}
-              domain={[0, 100]}
-              tick={{ fill: '#94a3b8', fontSize: 11 }}
-              axisLine={false}
-            />
-            <Radar
-              name={profile.studentName}
-              dataKey="value"
-              stroke={COLORS.primary}
-              strokeWidth={2.5}
-              fill={COLORS.primary}
-              fillOpacity={0.2}
-            />
-            <RTooltip
-              contentStyle={{
-                borderRadius: '8px',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                fontSize: '13px',
-              }}
-            />
-            <RLegend wrapperStyle={{ marginTop: '12px', fontSize: '13px' }} />
-          </RadarChart>
+          <div className="h-[350px]">
+            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={radarData}>
+              <PolarGrid stroke="#e2e8f0" />
+              <PolarAngleAxis dataKey="subject" tick={{ fill: COLORS.slate, fontSize: 13 }} />
+              <PolarRadiusAxis
+                angle={30}
+                domain={[0, 100]}
+                tick={{ fill: '#94a3b8', fontSize: 11 }}
+                axisLine={false}
+              />
+              <Radar
+                name={profile.studentName}
+                dataKey="value"
+                stroke={COLORS.primary}
+                strokeWidth={2.5}
+                fill={COLORS.primary}
+                fillOpacity={0.2}
+              />
+              <RTooltip
+                contentStyle={{
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                  fontSize: '13px',
+                }}
+              />
+              <RLegend wrapperStyle={{ marginTop: '12px', fontSize: '13px' }} />
+            </RadarChart>
+          </div>
         </RechartsCard>
 
         {/* ── AI 精准诊断 ───────────────────────────────── */}
@@ -252,40 +254,42 @@ export default function StudentProfilePage() {
 
       {/* ── 学习能力发展轨迹 ──────────────────────────────── */}
       <RechartsCard title="学习能力发展轨迹（近4周）">
-        <LineChart data={trajectoryData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-          <XAxis dataKey="week" tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
-          <YAxis domain={[30, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
-          <RTooltip
-            contentStyle={{
-              borderRadius: '8px',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-              fontSize: '12px',
-            }}
-          />
-          <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
-          <Line
-            type="monotone" dataKey="knowledge"
-            name="知识掌握" stroke={COLORS.primary} strokeWidth={2.5} dot={{ r: 3 }}
-          />
-          <Line
-            type="monotone" dataKey="skill"
-            name="技能应用" stroke={COLORS.secondary} strokeWidth={2.5} dot={{ r: 3 }}
-          />
-          <Line
-            type="monotone" dataKey="creativity"
-            name="创新能力" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 3 }}
-          />
-          <Line
-            type="monotone" dataKey="collaboration"
-            name="协作能力" stroke={COLORS.amber} strokeWidth={2.5} dot={{ r: 3 }}
-          />
-          <Line
-            type="monotone" dataKey="attitude"
-            name="学习态度" stroke={COLORS.warning} strokeWidth={2.5} dot={{ r: 3 }}
-          />
-        </LineChart>
+        <div className="h-[350px]">
+          <LineChart data={trajectoryData} margin={{ top: 10, right: 30, left: 20, bottom: 25 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis dataKey="week" tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+            <YAxis domain={[30, 100]} tick={{ fill: COLORS.slate, fontSize: 12 }} axisLine={{ stroke: '#e2e8f0' }} />
+            <RTooltip
+              contentStyle={{
+                borderRadius: '8px',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                fontSize: '12px',
+              }}
+            />
+            <RLegend wrapperStyle={{ fontSize: '12px', marginTop: '8px' }} />
+            <Line
+              type="monotone" dataKey="knowledge"
+              name="知识掌握" stroke={COLORS.primary} strokeWidth={2.5} dot={{ r: 3 }}
+            />
+            <Line
+              type="monotone" dataKey="skill"
+              name="技能应用" stroke={COLORS.secondary} strokeWidth={2.5} dot={{ r: 3 }}
+            />
+            <Line
+              type="monotone" dataKey="creativity"
+              name="创新能力" stroke={COLORS.accent} strokeWidth={2.5} dot={{ r: 3 }}
+            />
+            <Line
+              type="monotone" dataKey="collaboration"
+              name="协作能力" stroke={COLORS.amber} strokeWidth={2.5} dot={{ r: 3 }}
+            />
+            <Line
+              type="monotone" dataKey="attitude"
+              name="学习态度" stroke={COLORS.warning} strokeWidth={2.5} dot={{ r: 3 }}
+            />
+          </LineChart>
+        </div>
       </RechartsCard>
 
       {/* ── AI 个性化建议 ───────────────────────────────── */}

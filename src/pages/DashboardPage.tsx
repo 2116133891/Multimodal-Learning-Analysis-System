@@ -1,6 +1,7 @@
 // ===== 企业级数字驾驶舱 — 课程全局画像与健康度监控 =====
 // 设计参考：Vercel Dashboard · Tremor React · Linear App
 // 核心特性：毛玻璃卡片 · Sparkline 微图表 · Staggered 入场动画 · 等宽数字 · 渐进层次
+// 增强：六维指标（学/教/资源/互动/方法/环境）+ OBE 目标达成 + PDCA 循环徽章
 import { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStore } from '../hooks/useStore';
@@ -16,12 +17,12 @@ import {
   BarChart3, Layers, Network, Mic, BookOpen, MessageSquare,
   Play, Headphones, Video, FileText, Download, Thermometer,
   Award, Star, Sparkles, ArrowUpRight, ArrowDownRight, Brain, Lightbulb,
-  Clock, BarChart3 as BarChart3Icon, LineChart, PieChart,
+  Clock, BarChart3 as BarChart3Icon, LineChart, PieChart, Monitor, GitMerge,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
   ResponsiveContainer, Legend, BarChart, Bar, PieChart as RPieChart, Pie, Cell,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ReferenceLine,
 } from 'recharts';
 
 // ═══════════════════════════════════════════════════════════
@@ -89,11 +90,12 @@ function generateInteractionTrend() {
 
 function generateRadarData(week: number) {
   return [
-    { subject: '教学状态表现', A: Math.min(100, 50 + week * 2.5), fullMark: 100 },
-    { subject: '平台资源质量', A: Math.min(100, 48 + week * 2.2), fullMark: 100 },
-    { subject: '师生互动深度', A: Math.min(100, 45 + week * 2.8), fullMark: 100 },
-    { subject: '知识点掌握度', A: Math.min(100, 55 + week * 2.0), fullMark: 100 },
-    { subject: '课堂情感氛围', A: Math.min(100, 42 + week * 2.3), fullMark: 100 },
+    { subject: '学生学的状态', A: Math.min(100, 50 + week * 2.5), fullMark: 100 },
+    { subject: '老师教的状态', A: Math.min(100, 48 + week * 2.2), fullMark: 100 },
+    { subject: '平台资源质量', A: Math.min(100, 55 + week * 2.0), fullMark: 100 },
+    { subject: '教学互动方式', A: Math.min(100, 45 + week * 2.8), fullMark: 100 },
+    { subject: '教学方法适配', A: Math.min(100, 42 + week * 2.3), fullMark: 100 },
+    { subject: '教学环境', A: Math.min(100, 55 + week * 1.5 + (Math.random() * 10)), fullMark: 100 },
   ];
 }
 
@@ -119,10 +121,20 @@ function generateSystemHealthData() {
 
 function generateDataStreamData() {
   const data = [];
-  let val = 200;
+  let videoVal = 70, textVal = 50, interVal = 45, tradVal = 35;
   for (let i = 0; i < 20; i++) {
-    val = Math.max(50, Math.min(500, val + (Math.random() - 0.45) * 80));
-    data.push({ time: `${String(i).padStart(2, '0')}:00`, throughput: Math.round(val) });
+    videoVal = Math.max(20, Math.min(180, videoVal + (Math.random() - 0.45) * 30));
+    textVal = Math.max(15, Math.min(140, textVal + (Math.random() - 0.45) * 25));
+    interVal = Math.max(10, Math.min(120, interVal + (Math.random() - 0.45) * 22));
+    tradVal = Math.max(8, Math.min(100, tradVal + (Math.random() - 0.45) * 18));
+    data.push({
+      time: `${String(i).padStart(2, '0')}:00`,
+      throughput: Math.round(videoVal + textVal + interVal + tradVal),
+      video: Math.round(videoVal),
+      text: Math.round(textVal),
+      interaction: Math.round(interVal),
+      traditional: Math.round(tradVal),
+    });
   }
   return data;
 }
@@ -281,11 +293,64 @@ function MetricRow({ icon, label, value, unit, color, trend }: {
 }
 
 // ═══════════════════════════════════════════════════════════
+//  子组件 — 紧凑指标卡片（含迷你折线图）
+// ═══════════════════════════════════════════════════════════
+
+function MetricCardCompact({ label, value, icon, sparkData, color }: {
+  label: string; value: number; icon: React.ReactNode; sparkData: number[]; color: string;
+}) {
+  const isUp = sparkData.length >= 2 && sparkData[sparkData.length - 1] >= sparkData[0];
+
+  const sparkSvg = (() => {
+    if (sparkData.length < 2) return null;
+    const max = Math.max(...sparkData);
+    const min = Math.min(...sparkData);
+    const range = max - min || 1;
+    const pts = sparkData.map((v, i) => {
+      const x = (i / (sparkData.length - 1)) * 100;
+      const y = 100 - ((v - min) / range) * 100;
+      return `${x},${y}`;
+    }).join(' ');
+    return (
+      <svg viewBox="0 0 100 100" className="w-full" style={{ height: '28px', preserveAspectRatio: 'none' }}>
+        <defs>
+          <linearGradient id={`mc-grad-${label.replace(/\s/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.15} />
+            <stop offset="100%" stopColor={color} stopOpacity={0} />
+          </linearGradient>
+        </defs>
+        <polyline points={pts} fill="none" stroke={color} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        <polygon points={`0,100 ${pts} 100,100`} fill={`url(#mc-grad-${label.replace(/\s/g, '')})`} />
+      </svg>
+    );
+  })();
+
+  return (
+    <div className="group/mc rounded-xl bg-slate-50/80 border border-slate-100/80 hover:bg-white hover:border-slate-200/80 hover:shadow-sm transition-all duration-200 overflow-hidden">
+      <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-400 group-hover/mc:text-slate-500 transition-colors">{icon}</span>
+          <span className="text-[11px] font-medium text-slate-500 group-hover/mc:text-slate-600 transition-colors">{label}</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {isUp && <TrendingUp size={10} className="text-emerald-500" />}
+          {!isUp && <TrendingDown size={10} className="text-red-400" />}
+          <span className="text-sm font-bold tabular-nums text-slate-700">{value}</span>
+        </div>
+      </div>
+      <div className="px-3 pb-1">
+        {sparkSvg}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
 //  主页面
 // ═══════════════════════════════════════════════════════════
 
 export default function DashboardPage() {
-  const { courseInfo, records, alerts, vitalityScores, courseProfiles, loading, fetchData } = useStore();
+  const { courseInfo, records, alerts, vitalityScores, courseProfiles, loading, fetchData, suggestions, fusionWeights, studentProfiles, multimodalFeatures } = useStore();
   const [healthScore, setHealthScore] = useState(75);
   const [liveLogs, setLiveLogs] = useState<Array<{ time: string; msg: string; category: string }>>([]);
   const [systemHealthData] = useState(generateSystemHealthData);
@@ -332,20 +397,30 @@ export default function DashboardPage() {
       setCurrentConcurrency(p => Math.max(80, Math.min(350, p + Math.floor((Math.random() - 0.45) * 40))));
       setCurrentLatency(p => Math.max(5, Math.min(60, +(p + (Math.random() - 0.5) * 8).toFixed(1))));
       setCurrentGpu(p => Math.max(30, Math.min(95, p + Math.floor((Math.random() - 0.45) * 12))));
-      setCurrentThroughput(p => Math.max(100, Math.min(1000, p + Math.floor((Math.random() - 0.45) * 100))));
+      // throughput 从堆叠数据计算
+      const last = streamData[streamData.length - 1];
+      if (last) {
+        setCurrentThroughput(last.throughput);
+      }
     }, 2000);
     return () => clearInterval(interval);
-  }, []);
+  }, [streamData]);
 
   // 数据流图表更新
   useEffect(() => {
     const interval = setInterval(() => {
       setStreamData(prev => {
-        const lastVal = prev[prev.length - 1]?.throughput ?? 200;
-        const newVal = Math.max(50, Math.min(500, lastVal + (Math.random() - 0.45) * 80));
+        const last = prev[prev.length - 1] ?? { video: 70, text: 50, interaction: 45, traditional: 35 };
         const now = new Date();
         const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-        return [...prev.slice(-19), { time: timeStr, throughput: Math.round(newVal) }];
+        return [...prev.slice(-19), {
+          time: timeStr,
+          throughput: Math.round(last.video + last.text + last.interaction + last.traditional),
+          video: Math.max(20, Math.min(180, last.video + Math.floor((Math.random() - 0.45) * 30))),
+          text: Math.max(15, Math.min(140, last.text + Math.floor((Math.random() - 0.45) * 25))),
+          interaction: Math.max(10, Math.min(120, last.interaction + Math.floor((Math.random() - 0.45) * 22))),
+          traditional: Math.max(8, Math.min(100, last.traditional + Math.floor((Math.random() - 0.45) * 18))),
+        }];
       });
     }, 3000);
     return () => clearInterval(interval);
@@ -446,9 +521,9 @@ export default function DashboardPage() {
             <Sparkles size={20} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-800 tracking-tight">课程全局画像</h2>
+            <h2 className="text-xl font-bold text-slate-800 tracking-tight">CQI-MLAS 课程持续改进系统</h2>
             <p className="text-xs text-slate-400 mt-0.5">
-              {courseInfo?.name} · {courseInfo?.semester} · {courseInfo?.type}
+              基于多模态数据联动的课程持续改进（Course Quality Improvement）· 五维画像 · OBE 目标达成 · PDCA 循环
             </p>
           </div>
         </div>
@@ -494,9 +569,9 @@ export default function DashboardPage() {
       />
 
       {/* ═══════════════════════════════════════════════════════
-          核心指标卡片 — 5 列等宽 Grid
+          核心指标卡片 — 5 列等宽 Grid（五维指标）
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-stretch">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-stretch">
         <motion.div variants={itemVariants} className="h-full">
           <StatCard
             label="课程综合健康度"
@@ -514,7 +589,22 @@ export default function DashboardPage() {
 
         <motion.div variants={itemVariants} className="h-full">
           <StatCard
-            label="教师教学状态"
+            label="学生学的状态"
+            value={currentInteraction?.group ?? 68}
+            subtitle={`专注 ${(currentTeaching?.emotion ?? 72)}% · 弹幕 ${(currentInteraction?.danmaku ?? 5) * 10}条`}
+            icon={<Eye size={16} />}
+            trend="up"
+            trendValue="+4.1%"
+            color="blue"
+            sparklineData={sparklineInteraction}
+            accentBorder
+            delay={1}
+          />
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="h-full">
+          <StatCard
+            label="老师教的状态"
             value={currentTeaching?.emotion ?? 72}
             subtitle={`语速 ${(currentTeaching?.pace ?? 70)} · 提问 ${(currentTeaching?.questionRate ?? 12)}次/节`}
             icon={<Mic size={16} />}
@@ -523,13 +613,13 @@ export default function DashboardPage() {
             color="emerald"
             sparklineData={sparklineTeaching}
             accentBorder
-            delay={1}
+            delay={2}
           />
         </motion.div>
 
         <motion.div variants={itemVariants} className="h-full">
           <StatCard
-            label="课程资源利用率"
+            label="平台资源质量"
             value={currentResource?.completion ?? 78}
             subtitle={`完播率 ${(currentResource?.completion ?? 78)}% · 下载 ${(currentResource?.download ?? 50)}次`}
             icon={<BookOpen size={16} />}
@@ -538,36 +628,143 @@ export default function DashboardPage() {
             color="purple"
             sparklineData={sparklineResource}
             accentBorder
-            delay={2}
-          />
-        </motion.div>
-
-        <motion.div variants={itemVariants} className="h-full">
-          <StatCard
-            label="互动方式热度"
-            value={currentInteraction?.group ?? 68}
-            subtitle={`讨论 ${(currentInteraction?.group ?? 68)} · 投票 ${(currentInteraction?.poll ?? 75)}%`}
-            icon={<MessageSquare size={16} />}
-            trend="up"
-            trendValue="+2.8%"
-            color="amber"
-            sparklineData={sparklineInteraction}
-            accentBorder
             delay={3}
           />
         </motion.div>
 
         <motion.div variants={itemVariants} className="h-full">
           <StatCard
-            label="AI 多源融合"
-            value={currentLatency}
-            subtitle={`GPU ${(currentGpu)}% · 并发 ${currentConcurrency}`}
-            icon={<Cpu size={16} />}
-            trend="down"
-            trendValue={`-${(14.2 - currentLatency).toFixed(1)}ms`}
-            color="cyan"
+            label="教学方法适配"
+            value={currentResource?.watchDepth ?? 72}
+            subtitle={`翻转 ${(currentInteraction?.flip ?? 60)}% · 项目 ${(currentResource?.download ?? 40) * 2}%`}
+            icon={<Lightbulb size={16} />}
+            trend="up"
+            trendValue="+3.7%"
+            color="amber"
+            sparklineData={sparklineResource}
+            accentBorder
             delay={4}
           />
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="h-full">
+          <StatCard
+            label="教学环境"
+            value={Math.min(100, Math.round(65 + selectedWeek * 1.5))}
+            subtitle={`温度舒适 · 光线充足 · 设备完好`}
+            icon={<Monitor size={16} />}
+            trend="up"
+            trendValue="+2.1%"
+            color="cyan"
+            sparklineData={sparklineHealth}
+            accentBorder
+            delay={5}
+          />
+        </motion.div>
+      </div>
+
+      {/* ═══════════════════════════════════════════════════════
+          OBE 目标达成 + PDCA 循环徽章行
+          ═══════════════════════════════════════════════════════ */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* OBE 目标达成度 */}
+        <motion.div variants={itemVariants} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Target size={16} className="text-blue-600" />
+            <h4 className="text-sm font-bold text-slate-800">OBE 目标达成度</h4>
+          </div>
+          <div className="space-y-2">
+            {courseInfo?.objectives.map(obj => {
+              const objRecords = records.filter(r => r.objectiveId === obj.id);
+              const avgScore = objRecords.length > 0
+                ? Math.round(objRecords.reduce((s, r) => s + r.value, 0) / objRecords.length)
+                : 0;
+              const achievement = Math.min(100, Math.round((avgScore / obj.targetScore) * 100));
+              return (
+                <div key={obj.id} className="flex items-center gap-2">
+                  <span className="text-[10px] text-slate-500 w-24 truncate" title={obj.name}>{obj.name.replace('知识目标：', '').replace('技能目标：', '').replace('态度目标：', '')}</span>
+                  <div className="flex-1 bg-slate-100 rounded-full h-1.5">
+                    <div className={`h-1.5 rounded-full ${achievement >= 90 ? 'bg-emerald-500' : achievement >= 70 ? 'bg-blue-500' : 'bg-amber-500'}`} style={{ width: `${achievement}%` }} />
+                  </div>
+                  <span className="text-xs font-bold tabular-nums text-slate-700">{achievement}%</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-slate-500">平均达成率</span>
+            <span className="text-sm font-bold text-blue-600">
+              {courseInfo?.objectives.length ? Math.round(
+                courseInfo.objectives.reduce((sum, obj) => {
+                  const recs = records.filter(r => r.objectiveId === obj.id);
+                  const avg = recs.length > 0 ? Math.round(recs.reduce((s, r) => s + r.value, 0) / recs.length) : 0;
+                  return sum + Math.min(100, Math.round((avg / obj.targetScore) * 100));
+                }, 0) / courseInfo.objectives.length
+              ) : 0}%
+            </span>
+          </div>
+        </motion.div>
+
+        {/* PDCA 循环阶段 */}
+        <motion.div variants={itemVariants} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <Repeat2 size={16} className="text-emerald-600" />
+            <h4 className="text-sm font-bold text-slate-800">PDCA 持续改进循环</h4>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            {['Plan', 'Do', 'Check', 'Act'].map((stage, i) => {
+              const isActive = selectedWeek <= 4 ? i === 0 : selectedWeek <= 8 ? i === 1 : selectedWeek <= 12 ? i === 2 : i === 3;
+              const colors = [
+                'from-blue-500 to-blue-600',
+                'from-emerald-500 to-emerald-600',
+                'from-amber-500 to-amber-600',
+                'from-purple-500 to-purple-600',
+              ];
+              const descs = [
+                '计划：设定目标',
+                '执行：实施改进',
+                '检查：效果评估',
+                '处理：固化优化',
+              ];
+              return (
+                <div key={stage} className={`text-center p-2 rounded-lg border ${isActive ? 'border-transparent shadow-sm' : 'border-slate-100 bg-slate-50'}`}>
+                  <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${colors[i]} flex items-center justify-center mx-auto mb-1 ${isActive ? 'ring-2 ring-offset-1 ring-blue-300' : ''}`}>
+                    <span className="text-white text-xs font-bold">{['P', 'D', 'C', 'A'][i]}</span>
+                  </div>
+                  <p className={`text-[10px] font-bold ${isActive ? 'text-slate-800' : 'text-slate-400'}`}>{stage}</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">{descs[i]}</p>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* 课程生命力综合 */}
+        <motion.div variants={itemVariants} className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <HeartPulse size={16} className="text-purple-600" />
+            <h4 className="text-sm font-bold text-slate-800">课程生命力</h4>
+          </div>
+          <div className="grid grid-cols-5 gap-1.5">
+            {['课堂活力', '创造力', '学习感知', '资源延续', '课程进化'].map((label, i) => {
+              const colors = ['bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500', 'bg-pink-500'];
+              const vals = vitalityScores[selectedWeek - 1];
+              const val = vals ? [vals.classroomVitality, vals.creativity, vals.learningPerception, vals.resourceExtension, vals.courseEvolution][i] : 0;
+              return (
+                <div key={label} className="text-center">
+                  <div className={`w-full h-16 rounded-lg ${colors[i]} bg-opacity-10 flex items-end justify-center p-1`}>
+                    <div className={`w-full ${colors[i]} rounded-sm transition-all`} style={{ height: `${val}%` }} />
+                  </div>
+                  <p className="text-[9px] text-slate-500 mt-1 leading-tight">{label}</p>
+                  <p className="text-xs font-bold text-slate-700">{val}</p>
+                </div>
+              );
+            })}
+          </div>
+          <div className="mt-3 pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span className="text-xs text-slate-500">综合评分</span>
+            <span className="text-lg font-bold text-purple-600">{vitalityScores[selectedWeek - 1]?.overall ?? 0}<span className="text-xs text-slate-400">/100</span></span>
+          </div>
         </motion.div>
       </div>
 
@@ -576,7 +773,7 @@ export default function DashboardPage() {
           ═══════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <motion.div variants={itemVariants}>
-          <RechartsCard title="课程五维评价雷达" description="教学状态 · 资源质量 · 互动深度 · 知识掌握 · 情感氛围" accent="blue" delay={5}>
+          <RechartsCard title="课程六维评价雷达" description="学生学 · 老师教 · 资源质量 · 互动方式 · 教学方法 · 教学环境" accent="blue" delay={5}>
             <ResponsiveContainer width="100%" height={380}>
               <RadarChart cx="50%" cy="50%" outerRadius="75%" data={radarData}>
                 <PolarGrid stroke="#e2e8f0" />
@@ -622,54 +819,94 @@ export default function DashboardPage() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════
-          第二行：教学 + 资源 + 互动（三列）
+          第二行：教学 + 资源 + 互动 + 方法（四列 — 重设计）
           ═══════════════════════════════════════════════════════ */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
         {/* 教师教学状态 */}
-        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
-          <RechartsCard title="教师教学状态" accent="emerald" delay={7}>
-            <div className="space-y-4">
-              <MetricRow icon={<Play size={14} />} label="讲授语速" value={currentTeaching?.pace ?? 70} unit="%" color="emerald" trend="up" />
-              <MetricRow icon={<Star size={14} />} label="情绪饱满度" value={currentTeaching?.emotion ?? 72} unit="%" color="blue" trend="up" />
-              <MetricRow icon={<Eye size={14} />} label="眼神交流" value={currentTeaching?.eyeContact ?? 68} unit="%" color="purple" trend="up" />
-              <MetricRow icon={<Headphones size={14} />} label="提问频次" value={(currentTeaching?.questionRate ?? 12) * 4} unit="%" color="amber" trend="stable" />
-              <MetricRow icon={<Users size={14} />} label="走动频次" value={(currentTeaching?.movement ?? 15) * 3} unit="%" color="cyan" trend="up" />
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
+          <div className="relative rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden group hover:shadow-lg hover:shadow-emerald-500/5 hover:border-emerald-200/50 transition-all duration-300 h-full flex flex-col">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500 to-teal-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="px-5 pt-4 pb-3 border-b border-slate-100/80 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+              <h3 className="text-sm font-semibold text-slate-700 group-hover:text-slate-800 transition-colors">教师教学状态</h3>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <MiniSparkline data={teachingTrend.slice(0, 8).map(d => d.emotion)} color="#10b981" height={48} />
+            <div className="p-4 pt-3 space-y-3 flex-1">
+              {[
+                { label: '讲授语速', value: currentTeaching?.pace ?? 70, icon: <Play size={13} />, data: teachingTrend.slice(0, 8).map(d => d.pace), color: '#10b981' },
+                { label: '情绪饱满度', value: currentTeaching?.emotion ?? 72, icon: <Star size={13} />, data: teachingTrend.slice(0, 8).map(d => d.emotion), color: '#3b82f6' },
+                { label: '眼神交流', value: currentTeaching?.eyeContact ?? 68, icon: <Eye size={13} />, data: teachingTrend.slice(0, 8).map(d => d.eyeContact), color: '#8b5cf6' },
+                { label: '提问频次', value: (currentTeaching?.questionRate ?? 12) * 4, icon: <Headphones size={13} />, data: teachingTrend.slice(0, 8).map(d => d.questionRate * 4), color: '#f59e0b' },
+                { label: '走动频次', value: (currentTeaching?.movement ?? 15) * 3, icon: <Users size={13} />, data: teachingTrend.slice(0, 8).map(d => d.movement * 3), color: '#06b6d4' },
+              ].map(item => (
+                <MetricCardCompact key={item.label} label={item.label} value={item.value} icon={item.icon} sparkData={item.data} color={item.color} />
+              ))}
             </div>
-          </RechartsCard>
+          </div>
         </motion.div>
 
         {/* 课程资源利用率 */}
-        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
-          <RechartsCard title="课程资源利用率" accent="purple" delay={8}>
-            <div className="space-y-4">
-              <MetricRow icon={<Video size={14} />} label="课件完播率" value={currentResource?.completion ?? 78} unit="%" color="purple" trend="up" />
-              <MetricRow icon={<Play size={14} />} label="视频观看深度" value={currentResource?.watchDepth ?? 72} unit="%" color="indigo" trend="up" />
-              <MetricRow icon={<Repeat2 size={14} />} label="难点回放率" value={currentResource?.replay ?? 35} unit="%" color="amber" trend="down" />
-              <MetricRow icon={<Download size={14} />} label="资源下载量" value={Math.min(100, currentResource?.download ?? 50)} unit="%" color="teal" trend="up" />
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
+          <div className="relative rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden group hover:shadow-lg hover:shadow-purple-500/5 hover:border-purple-200/50 transition-all duration-300 h-full flex flex-col">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-purple-500 to-violet-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="px-5 pt-4 pb-3 border-b border-slate-100/80 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-purple-500 flex-shrink-0" />
+              <h3 className="text-sm font-semibold text-slate-700 group-hover:text-slate-800 transition-colors">课程资源利用率</h3>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <MiniSparkline data={resourceTrend.slice(0, 8).map(d => d.completion)} color="#8b5cf6" height={48} />
+            <div className="p-4 pt-3 space-y-3 flex-1">
+              {[
+                { label: '课件完播率', value: currentResource?.completion ?? 78, icon: <Video size={13} />, data: resourceTrend.slice(0, 8).map(d => d.completion), color: '#8b5cf6' },
+                { label: '视频观看深度', value: currentResource?.watchDepth ?? 72, icon: <Play size={13} />, data: resourceTrend.slice(0, 8).map(d => d.watchDepth), color: '#6366f1' },
+                { label: '难点回放率', value: currentResource?.replay ?? 35, icon: <Repeat2 size={13} />, data: resourceTrend.slice(0, 8).map(d => d.replay), color: '#f59e0b' },
+                { label: '资源下载量', value: Math.min(100, currentResource?.download ?? 50), icon: <Download size={13} />, data: resourceTrend.slice(0, 8).map(d => Math.min(100, d.download)), color: '#14b8a6' },
+              ].map(item => (
+                <MetricCardCompact key={item.label} label={item.label} value={item.value} icon={item.icon} sparkData={item.data} color={item.color} />
+              ))}
             </div>
-          </RechartsCard>
+          </div>
         </motion.div>
 
         {/* 互动方式热度 */}
-        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
-          <RechartsCard title="互动方式与热度" accent="amber" delay={9}>
-            <div className="space-y-4">
-              <MetricRow icon={<Users size={14} />} label="小组讨论" value={currentInteraction?.group ?? 68} unit="分" color="amber" trend="up" />
-              <MetricRow icon={<MessageSquare size={14} />} label="师生问答" value={Math.min(100, (currentInteraction?.qa ?? 10) * 5)} unit="%" color="blue" trend="up" />
-              <MetricRow icon={<Globe size={14} />} label="讨论区" value={Math.min(100, currentInteraction?.board ?? 35)} unit="%" color="emerald" trend="stable" />
-              <MetricRow icon={<Radio size={14} />} label="实时投票" value={currentInteraction?.poll ?? 75} unit="%" color="cyan" trend="up" />
-              <MetricRow icon={<Zap size={14} />} label="弹幕" value={Math.min(100, (currentInteraction?.danmaku ?? 5) * 6)} unit="%" color="pink" trend="stable" />
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
+          <div className="relative rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden group hover:shadow-lg hover:shadow-amber-500/5 hover:border-amber-200/50 transition-all duration-300 h-full flex flex-col">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-amber-500 to-orange-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="px-5 pt-4 pb-3 border-b border-slate-100/80 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500 flex-shrink-0" />
+              <h3 className="text-sm font-semibold text-slate-700 group-hover:text-slate-800 transition-colors">互动方式与热度</h3>
             </div>
-            <div className="mt-4 pt-3 border-t border-slate-100">
-              <MiniSparkline data={interactionTrend.slice(0, 8).map(d => d.group)} color="#f59e0b" height={48} />
+            <div className="p-4 pt-3 space-y-3 flex-1">
+              {[
+                { label: '小组讨论', value: currentInteraction?.group ?? 68, icon: <Users size={13} />, data: interactionTrend.slice(0, 8).map(d => d.group), color: '#f59e0b' },
+                { label: '师生问答', value: Math.min(100, (currentInteraction?.qa ?? 10) * 5), icon: <MessageSquare size={13} />, data: interactionTrend.slice(0, 8).map(d => Math.min(100, d.qa * 5)), color: '#3b82f6' },
+                { label: '讨论区', value: Math.min(100, currentInteraction?.board ?? 35), icon: <Globe size={13} />, data: interactionTrend.slice(0, 8).map(d => Math.min(100, d.board)), color: '#10b981' },
+                { label: '实时投票', value: currentInteraction?.poll ?? 75, icon: <Radio size={13} />, data: interactionTrend.slice(0, 8).map(d => d.poll), color: '#06b6d4' },
+                { label: '弹幕', value: Math.min(100, (currentInteraction?.danmaku ?? 5) * 6), icon: <Zap size={13} />, data: interactionTrend.slice(0, 8).map(d => Math.min(100, d.danmaku * 6)), color: '#ec4899' },
+              ].map(item => (
+                <MetricCardCompact key={item.label} label={item.label} value={item.value} icon={item.icon} sparkData={item.data} color={item.color} />
+              ))}
             </div>
-          </RechartsCard>
+          </div>
+        </motion.div>
+
+        {/* 教学方法适配度 */}
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
+          <div className="relative rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden group hover:shadow-lg hover:shadow-cyan-500/5 hover:border-cyan-200/50 transition-all duration-300 h-full flex flex-col">
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500 to-blue-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+            <div className="px-5 pt-4 pb-3 border-b border-slate-100/80 flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-cyan-500 flex-shrink-0" />
+              <h3 className="text-sm font-semibold text-slate-700 group-hover:text-slate-800 transition-colors">教学方法适配度</h3>
+            </div>
+            <div className="p-4 pt-3 space-y-3 flex-1">
+              {[
+                { label: '案例教学', value: Math.min(100, currentResource?.completion ?? 70), icon: <BookOpen size={13} />, data: resourceTrend.slice(0, 8).map(d => Math.min(100, d.completion)), color: '#06b6d4' },
+                { label: '翻转课堂', value: currentInteraction?.poll ?? 65, icon: <Repeat2 size={13} />, data: interactionTrend.slice(0, 8).map(d => Math.min(100, Math.max(40, d.poll - 10))), color: '#3b82f6' },
+                { label: '项目驱动', value: Math.min(100, currentTeaching?.pace ?? 68), icon: <Target size={13} />, data: teachingTrend.slice(0, 8).map(d => Math.min(100, d.pace)), color: '#10b981' },
+                { label: '支架式教学', value: Math.min(100, currentInteraction?.poll ?? 62), icon: <Lightbulb size={13} />, data: interactionTrend.slice(0, 8).map(d => Math.min(100, d.poll)), color: '#8b5cf6' },
+                { label: '合作学习', value: Math.min(100, currentResource?.watchDepth ?? 60), icon: <Users size={13} />, data: resourceTrend.slice(0, 8).map(d => Math.min(100, d.watchDepth)), color: '#f59e0b' },
+              ].map(item => (
+                <MetricCardCompact key={item.label} label={item.label} value={item.value} icon={item.icon} sparkData={item.data} color={item.color} />
+              ))}
+            </div>
+          </div>
         </motion.div>
       </div>
 
@@ -782,43 +1019,100 @@ export default function DashboardPage() {
           第四行：数据流 + 实时日志
           ═══════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch">
-        {/* 实时数据吞吐量 */}
-        <motion.div variants={itemVariants} className="h-full flex flex-col justify-between">
-          <RechartsCard
-            title="多源数据融合吞吐"
-            description={`${currentThroughput} KB/s 实时吞吐`}
-            accent="blue"
-            delay={13}
-            toolbar={
-              <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 rounded-lg border border-blue-100">
-                <Activity size={12} className="text-blue-500" />
-                <span className="text-[11px] font-semibold text-blue-600 tabular-nums">{currentThroughput} KB/s</span>
-              </span>
-            }
-          >
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={streamData}>
-                <defs>
-                  <linearGradient id="streamGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <RTooltip
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', fontSize: '12px' }}
-                  formatter={(value: number) => [`${value} KB/s`, '吞吐量']}
-                />
-                <Area
-                  type="monotone" dataKey="throughput" name="throughput"
-                  stroke="#3b82f6" strokeWidth={2.5} fill="url(#streamGrad)" dot={false}
-                  activeDot={{ r: 5, strokeWidth: 0, fill: '#3b82f6' }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </RechartsCard>
+        {/* 多源数据融合吞吐 */}
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
+          <div className="relative rounded-2xl border border-slate-200/60 bg-white/70 backdrop-blur-xl shadow-sm overflow-hidden group hover:shadow-lg hover:shadow-blue-500/5 hover:border-blue-200/50 transition-all duration-300">
+            {/* 顶部渐变装饰条 */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-blue-500 via-cyan-500 to-indigo-500 opacity-80 group-hover:opacity-100 transition-opacity" />
+
+            {/* 标题栏 */}
+            <div className="px-5 pt-4 pb-3 border-b border-slate-100/80 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                <h3 className="text-sm font-semibold text-slate-700 group-hover:text-slate-800 transition-colors">多源数据融合吞吐</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 rounded-full border border-blue-100">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500" />
+                  </span>
+                  <span className="text-[10px] font-semibold text-blue-600 tabular-nums">{currentThroughput} KB/s</span>
+                </span>
+              </div>
+            </div>
+
+            {/* 内容区域 */}
+            <div className="p-4 pt-3 space-y-4">
+              {/* 四模态实时吞吐柱状图 */}
+              <div className="h-44">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={streamData}>
+                    <defs>
+                      <linearGradient id="barVideoGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#3b82f6" />
+                        <stop offset="100%" stopColor="#60a5fa" />
+                      </linearGradient>
+                      <linearGradient id="barTextGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" />
+                        <stop offset="100%" stopColor="#34d399" />
+                      </linearGradient>
+                      <linearGradient id="barInterGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#fbbf24" />
+                      </linearGradient>
+                      <linearGradient id="barTradGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#8b5cf6" />
+                        <stop offset="100%" stopColor="#a78bfa" />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="time" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <RTooltip
+                      contentStyle={{ borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '11px' }}
+                      formatter={(value: number) => [`${value} KB/s`, '']}
+                    />
+                    <Bar dataKey="video" name="视频微表情" stackId="1" fill="url(#barVideoGrad)" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="text" name="文本语义" stackId="1" fill="url(#barTextGrad)" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="interaction" name="交互行为" stackId="1" fill="url(#barInterGrad)" radius={[0, 0, 0, 0]} />
+                    <Bar dataKey="traditional" name="传统数据" stackId="1" fill="url(#barTradGrad)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+
+              {/* 四模态实时指标 */}
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { label: '视频微表情', value: Math.round(currentThroughput * 0.35), color: 'from-blue-500 to-blue-400', bg: 'bg-blue-50', border: 'border-blue-100', icon: Video, unit: 'KB/s' },
+                  { label: '文本语义', value: Math.round(currentThroughput * 0.25), color: 'from-emerald-500 to-emerald-400', bg: 'bg-emerald-50', border: 'border-emerald-100', icon: MessageSquare, unit: 'KB/s' },
+                  { label: '交互行为', value: Math.round(currentThroughput * 0.22), color: 'from-amber-500 to-amber-400', bg: 'bg-amber-50', border: 'border-amber-100', icon: Activity, unit: 'KB/s' },
+                  { label: '传统数据', value: Math.round(currentThroughput * 0.18), color: 'from-purple-500 to-purple-400', bg: 'bg-purple-50', border: 'border-purple-100', icon: Database, unit: 'KB/s' },
+                ].map(m => (
+                  <div key={m.label} className={`${m.bg} rounded-xl border ${m.border} p-2.5 text-center hover:scale-105 transition-transform`}>
+                    <m.icon size={14} className={`text-transparent bg-clip-text bg-gradient-to-r ${m.color} mx-auto mb-1`} />
+                    <p className={`text-lg font-bold tabular-nums bg-gradient-to-r ${m.color} bg-clip-text text-transparent`}>{m.value}</p>
+                    <p className="text-[9px] text-slate-400 mt-0.5 leading-tight">{m.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* 融合状态指示 */}
+              <div className="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-2">
+                  <GitMerge size={14} className="text-indigo-500" />
+                  <span className="text-xs text-slate-600">融合引擎</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-2 rounded-full bg-emerald-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                  </span>
+                  <span className="text-[10px] font-semibold text-emerald-600">运行中</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </motion.div>
 
         {/* 实时多模态数据流 — 暗色主题 */}
@@ -883,9 +1177,9 @@ export default function DashboardPage() {
           ═══════════════════════════════════════════════════════ */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-stretch">
         {/* 课程模块 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
           <RechartsCard title="课程模块" accent="indigo" delay={14}>
-            <div className="space-y-2.5">
+            <div className="flex-1 space-y-2.5 overflow-y-auto max-h-85 custom-scrollbar">
               {courseInfo?.modules.map((mod, i) => (
                 <motion.div
                   key={mod.id}
@@ -908,9 +1202,9 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 诊断告警 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
           <RechartsCard title="课程健康预警" accent="amber" delay={15}>
-            <div className="space-y-2.5">
+            <div className="flex-1 space-y-2.5 overflow-y-auto max-h-85 custom-scrollbar">
               {alerts.slice(0, 5).map((alert, i) => (
                 <motion.div
                   key={alert.id}
@@ -936,36 +1230,70 @@ export default function DashboardPage() {
         </motion.div>
 
         {/* 课程生命力趋势 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
           <RechartsCard title="课程生命力趋势" description="五维生命力综合评分" accent="purple" delay={16}>
-            <div className="flex items-center gap-6 mb-2">
-              <div className="flex items-baseline gap-1">
-                <span className="text-3xl font-bold tabular-nums text-gradient-purple">{vitalityScores[selectedWeek - 1]?.overall ?? 75}</span>
-                <span className="text-xs text-slate-400">/ 100</span>
+            <div className="space-y-4">
+              {/* 五维指标小卡片 */}
+              <div className="grid grid-cols-5 gap-2">
+                {[
+                  { label: '课堂活力', key: 'classroomVitality', color: '#3b82f6' },
+                  { label: '创造力', key: 'creativity', color: '#10b981' },
+                  { label: '学习感知', key: 'learningPerception', color: '#8b5cf6' },
+                  { label: '资源延续', key: 'resourceExtension', color: '#f59e0b' },
+                  { label: '课程进化', key: 'courseEvolution', color: '#ec4899' },
+                ].map(dim => {
+                  const score = vitalityScores[selectedWeek - 1]?.[dim.key] ?? 0;
+                  return (
+                    <div key={dim.label} className="text-center p-2 bg-slate-50 rounded-lg border border-slate-100">
+                      <div className="w-full h-10 rounded flex items-end justify-center p-1 mb-1" style={{ background: `${dim.color}10` }}>
+                        <div className="w-full rounded-sm transition-all duration-700" style={{ height: `${score}%`, backgroundColor: dim.color }} />
+                      </div>
+                      <p className="text-[9px] text-slate-500 leading-tight">{dim.label}</p>
+                      <p className="text-xs font-bold text-slate-700">{score}</p>
+                    </div>
+                  );
+                })}
               </div>
-              <MiniSparkline data={vitalitySparkline} color="#8b5cf6" height={40} />
+
+              {/* 五维折线面积图 */}
+              <div className="w-full h-52">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={vitalityScores}>
+                    <defs>
+                      <linearGradient id="vitalityOverallGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                    <XAxis dataKey="week" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                    <RTooltip
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', fontSize: '11px' }}
+                    />
+                    {/* 选中周高亮竖线 */}
+                    <ReferenceLine x={selectedWeek} stroke="#8b5cf6" strokeDasharray="3 3" strokeWidth={1} />
+                    <Area type="monotone" dataKey="overall" name="综合评分" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#vitalityOverallGrad)" dot={false} activeDot={{ r: 4 }} />
+                    <Area type="monotone" dataKey="classroomVitality" name="课堂活力" stroke="#3b82f6" strokeWidth={1.5} fill="transparent" dot={false} strokeDasharray="4 2" />
+                    <Area type="monotone" dataKey="creativity" name="创造力" stroke="#10b981" strokeWidth={1.5} fill="transparent" dot={false} strokeDasharray="4 2" />
+                    <Area type="monotone" dataKey="learningPerception" name="学习感知" stroke="#8b5cf6" strokeWidth={1.5} fill="transparent" dot={false} strokeDasharray="4 2" />
+                    <Area type="monotone" dataKey="resourceExtension" name="资源延续" stroke="#f59e0b" strokeWidth={1.5} fill="transparent" dot={false} strokeDasharray="4 2" />
+                    <Area type="monotone" dataKey="courseEvolution" name="课程进化" stroke="#ec4899" strokeWidth={1.5} fill="transparent" dot={false} strokeDasharray="4 2" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <ResponsiveContainer width="100%" height={130}>
-              <AreaChart data={vitalityScores.slice(0, selectedWeek)}>
-                <defs>
-                  <linearGradient id="vitalityGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="week" tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fontSize: 9, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <RTooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 12px rgba(0,0,0,0.06)', fontSize: '12px' }} />
-                <Area type="monotone" dataKey="overall" name="总体" stroke="#8b5cf6" strokeWidth={2.5} fill="url(#vitalityGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
-              </AreaChart>
-            </ResponsiveContainer>
           </RechartsCard>
         </motion.div>
 
-        {/* AI 智能课件生成入口 */}
-        <motion.div variants={itemVariants} className="lg:col-span-1 h-full flex flex-col justify-between">
-          <SmartCoursewareGenerator suggestions={[]} selectedWeek={selectedWeek} />
+        {/* AI 课程改进助手 */}
+        <motion.div variants={itemVariants} className="h-full flex flex-col">
+          <SmartCoursewareGenerator
+            suggestions={suggestions}
+            alerts={alerts}
+            vitalityScores={vitalityScores}
+            selectedWeek={selectedWeek}
+          />
         </motion.div>
       </div>
 
@@ -973,10 +1301,14 @@ export default function DashboardPage() {
           AI 课程数据助教 — 悬浮聊天入口
           ═══════════════════════════════════════════════════════ */}
       <AICopilot
-        suggestions={[]}
+        suggestions={suggestions}
         alerts={alerts}
-        healthScore={healthScore}
+        healthScore={currentProfile?.health ?? healthScore}
         selectedWeek={selectedWeek}
+        courseInfo={courseInfo}
+        vitalityScores={vitalityScores}
+        courseProfiles={courseProfiles}
+        fusionWeights={fusionWeights}
       />
     </motion.div>
   );

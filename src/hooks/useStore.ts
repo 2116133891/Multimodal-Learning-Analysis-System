@@ -32,6 +32,14 @@ interface AppState {
   // 决策日志
   decisionLogs: TeacherDecisionLog[];
 
+  // 多模态融合权重
+  fusionWeights: {
+    teaching: number;
+    resource: number;
+    interaction: number;
+    learning: number;
+  };
+
   // 加载状态
   loading: boolean;
   error: string | null;
@@ -66,6 +74,23 @@ export const useStore = create<AppState>((set, get) => ({
   decisionLogs: [],
   loading: false,
   error: null,
+
+  // 融合权重（默认值）
+  fusionWeights: (() => {
+    try {
+      const saved = localStorage.getItem('fusionWeights');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          teaching: parsed.teaching ?? 30,
+          resource: parsed.resource ?? 25,
+          interaction: parsed.interaction ?? 25,
+          learning: parsed.learning ?? 20,
+        };
+      }
+    } catch {}
+    return { teaching: 30, resource: 25, interaction: 25, learning: 20 };
+  })(),
 
   fetchData: async () => {
     set({ loading: true, error: null });
@@ -177,4 +202,21 @@ export const useStore = create<AppState>((set, get) => ({
       decisionLogs: [...decisionLogs, newLog],
     });
   },
+
+  // 多模态融合权重管理（localStorage 持久化）
+  setFusionWeights: (weights) => set((state) => {
+    const newWeights = { ...state.fusionWeights, ...weights };
+    try {
+      localStorage.setItem('fusionWeights', JSON.stringify(newWeights));
+    } catch {}
+    return { fusionWeights: newWeights };
+  }),
+
+  resetFusionWeights: () => set(() => {
+    const defaults = { teaching: 30, resource: 25, interaction: 25, learning: 20 };
+    try {
+      localStorage.removeItem('fusionWeights');
+    } catch {}
+    return { fusionWeights: defaults };
+  }),
 }));

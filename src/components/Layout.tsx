@@ -1,9 +1,10 @@
 // ===== 企业级侧边栏布局组件 =====
+// 增强：五维指标 + OBE + PDCA 标签
 import { useState } from 'react';
-import { LayoutDashboard, Database, GitMerge, Activity, Brain, HeartPulse, Repeat2, User, BarChart3, Menu, X, Sparkles, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, Database, GitMerge, Activity, Brain, HeartPulse, Repeat2, User, BarChart3, Menu, X, Sparkles, ChevronLeft, Globe } from 'lucide-react';
 import type { ReactNode } from 'react';
 
-type Page = 'dashboard' | 'collection' | 'fusion' | 'diagnosis' | 'ai' | 'vitality' | 'improvement' | 'profile' | 'efficacy';
+type Page = 'dashboard' | 'collection' | 'datahub' | 'fusion' | 'diagnosis' | 'ai' | 'vitality' | 'improvement' | 'profile' | 'efficacy';
 
 interface LayoutProps {
   currentPage: Page;
@@ -12,13 +13,14 @@ interface LayoutProps {
 }
 
 const navItems: { id: Page; label: string; icon: typeof LayoutDashboard; section?: string; badge?: string; badgeColor?: string }[] = [
-  { id: 'dashboard', label: '系统总览', icon: LayoutDashboard },
-  { id: 'collection', label: '数据采集', icon: Database },
-  { id: 'fusion', label: '数据融合', icon: GitMerge },
+  { id: 'dashboard', label: '课程全局画像', icon: LayoutDashboard },
+  { id: 'collection', label: '多源数据采集', icon: Database },
+  { id: 'datahub', label: '数据源管理', icon: Globe, badge: 'NEW', badgeColor: 'bg-blue-500' },
+  { id: 'fusion', label: '多模态数据融合', icon: GitMerge },
   { id: 'diagnosis', label: '动态诊断', icon: Activity },
   { id: 'ai', label: 'AI 决策支持', icon: Brain, badge: 'AI', badgeColor: 'bg-violet-500' },
   { id: 'vitality', label: '课程生命力', icon: HeartPulse },
-  { id: 'improvement', label: '持续改进闭环', icon: Repeat2 },
+  { id: 'improvement', label: '课程持续改进（CQI）', icon: Repeat2 },
   { id: 'profile', label: '课程画像详情', icon: User, section: '多维评估' },
   { id: 'efficacy', label: '干预成效验证', icon: BarChart3, section: '多维评估' },
 ];
@@ -49,8 +51,8 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
                   <Sparkles size={16} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <h1 className="text-sm font-bold text-slate-800 truncate">多模态课程分析</h1>
-                  <p className="text-[10px] text-slate-400 leading-tight">企业级 SaaS 面板</p>
+                  <h1 className="text-sm font-bold text-slate-800 truncate">CQI-MLAS</h1>
+                  <p className="text-[10px] text-slate-400 leading-tight">多模态课程持续改进系统</p>
                 </div>
               </div>
             )}
@@ -132,9 +134,10 @@ export default function Layout({ currentPage, onNavigate, children }: LayoutProp
           {sidebarOpen && (
             <div className="p-4 border-t border-slate-200/60">
               <div className="p-3 rounded-xl bg-gradient-to-br from-slate-50 to-blue-50/50 border border-slate-100">
-                <p className="text-[10px] font-semibold text-slate-500 mb-1">多模态课程分析系统</p>
+                <p className="text-[10px] font-semibold text-slate-500 mb-1">CQI-MLAS</p>
                 <p className="text-[10px] text-slate-400 leading-relaxed">
-                  基于多模态数据联动的<br/>高校课程持续改进机制
+                  多模态课程持续改进系统<br/>
+                  课程中心 · 六维画像 · PDCA 闭环 · 持续改进
                 </p>
               </div>
             </div>

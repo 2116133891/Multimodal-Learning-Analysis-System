@@ -19,7 +19,7 @@ export default function CardChart({ title, option, height = 350 }: CardChartProp
       <div className="px-5 py-4 border-b border-slate-100">
         <h3 className="text-base font-semibold text-slate-800">{title}</h3>
       </div>
-      <div className="p-4">
+      <div className="p-4" style={{ minHeight: 0 }}>
         <ReactECharts option={{ ...option, ...baseTheme }} style={{ height: `${height}px`, width: '100%' }} />
       </div>
     </div>

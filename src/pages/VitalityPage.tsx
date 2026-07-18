@@ -30,7 +30,7 @@ export default function VitalityPage() {
       <div className="space-y-6">
         <div>
           <h2 className="text-2xl font-bold text-slate-800">课程生命力</h2>
-          <p className="text-sm text-slate-500 mt-1">面向课程生命力提升的持续改进 — 五维评估与可视化</p>
+          <p className="text-sm text-slate-500 mt-1">面向课程生命力提升的持续改进 — 五维评估与可视化 · 课堂活力 · 创造力 · 学习感知 · 资源延续 · 课程进化</p>
         </div>
         <div className="flex items-center justify-center h-64">
           <p className="text-sm text-slate-400">暂无数据，请先在「数据采集」页面生成模拟数据</p>

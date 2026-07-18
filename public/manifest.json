@@ -1,0 +1,18 @@
+{
+  "name": "CQI-MLAS 多模态课程持续改进系统",
+  "short_name": "CQI-MLAS",
+  "description": "基于多模态数据联动的课程持续改进系统",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#3b82f6",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

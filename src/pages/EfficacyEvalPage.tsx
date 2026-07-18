@@ -1,11 +1,12 @@
-// ===== 成效验证页面 =====
+// ===== 成效验证页面（课程改进成效验证） =====
+// 核心概念：验证课程持续改进（CQI）闭环的有效性 — 通过多维指标对比优化前后的课程状态
 import { useEffect } from 'react';
 import { useStore } from '../hooks/useStore';
 import CardChart from '../components/CardChart';
 import RechartsCard from '../components/RechartsCard';
 import {
   BarChart3, CheckCircle, TrendingUp, ArrowUpRight,
-  Target, Sparkles, BookOpen,
+  Target, Sparkles, BookOpen, Users, Mic, Eye, MessageSquare,
 } from 'lucide-react';
 import {
   Radar, RadarChart, PolarGrid, PolarAngleAxis,
@@ -14,48 +15,49 @@ import {
   Legend, ResponsiveContainer, Area, AreaChart,
 } from 'recharts';
 
-// ── 模拟数据：5 次教学优化的 Pre/Post 分数 ──────────────────
+// 课程四维优化数据（Pre/Post 对比）
 const interventionData = [
   {
-    id: 'int1', type: '教学节奏调整', description: '第 3 周增加色彩理论实践课时',
-    pre: { cv: 58, cr: 52, lp: 60, re: 55, ce: 48 },
-    post: { cv: 78, cr: 65, lp: 75, re: 68, ce: 62 },
+    id: 'int1', type: '教学节奏调整', description: '第 3 周增加色彩理论实践课时，采用案例教学法',
+    pre: { learning: 58, teaching: 52, resource: 60, interaction: 55, health: 48 },
+    post: { learning: 78, teaching: 65, resource: 75, interaction: 68, health: 62 },
   },
   {
-    id: 'int2', type: '任务分层设计', description: '第 6 周设计分层造型练习任务',
-    pre: { cv: 62, cr: 55, lp: 58, re: 60, ce: 50 },
-    post: { cv: 80, cr: 72, lp: 76, re: 70, ce: 65 },
+    id: 'int2', type: '任务分层设计', description: '第 6 周设计分层造型练习任务，基础组侧重几何体写生',
+    pre: { learning: 62, teaching: 55, resource: 58, interaction: 60, health: 50 },
+    post: { learning: 80, teaching: 72, resource: 76, interaction: 70, health: 65 },
   },
   {
-    id: 'int3', type: '资源更新', description: '第 10 周建立风格案例资源库',
-    pre: { cv: 68, cr: 60, lp: 65, re: 52, ce: 55 },
-    post: { cv: 82, cr: 78, lp: 78, re: 75, ce: 70 },
+    id: 'int3', type: '资源更新', description: '第 10 周建立 20 个艺术家风格案例资源库',
+    pre: { learning: 68, teaching: 60, resource: 65, interaction: 52, health: 55 },
+    post: { learning: 82, teaching: 78, resource: 78, interaction: 75, health: 70 },
   },
   {
-    id: 'int4', type: '评价改革', description: '第 14 周设置中期检查点',
-    pre: { cv: 55, cr: 50, lp: 52, re: 58, ce: 45 },
-    post: { cv: 75, cr: 70, lp: 72, re: 72, ce: 65 },
+    id: 'int4', type: '评价改革', description: '第 14 周设置草图审查和初稿审查两个中期检查点',
+    pre: { learning: 55, teaching: 50, resource: 52, interaction: 58, health: 45 },
+    post: { learning: 75, teaching: 70, resource: 72, interaction: 72, health: 65 },
   },
   {
-    id: 'int5', type: '多模态反馈', description: '第 16 周引入实时情感反馈',
-    pre: { cv: 60, cr: 58, lp: 55, re: 50, ce: 52 },
-    post: { cv: 83, cr: 80, lp: 80, re: 76, ce: 72 },
+    id: 'int5', type: '多模态反馈', description: '第 16 周引入实时情感反馈机制',
+    pre: { learning: 60, teaching: 58, resource: 55, interaction: 50, health: 52 },
+    post: { learning: 83, teaching: 80, resource: 80, interaction: 76, health: 72 },
   },
 ];
 
+// 课程四维雷达图维度
 const radarDimensions = [
-  { key: 'cv', name: '课堂活力' },
-  { key: 'cr', name: '创造力' },
-  { key: 'lp', name: '学习感知' },
-  { key: 're', name: '资源延续' },
-  { key: 'ce', name: '课程进化' },
+  { key: 'learning', name: '学生学的状态' },
+  { key: 'teaching', name: '老师教的状态' },
+  { key: 'resource', name: '平台资源质量' },
+  { key: 'interaction', name: '教学互动方式' },
+  { key: 'health', name: '课程整体健康度' },
 ];
 
 // 计算各维度平均 Pre / Post
 const avgPre = radarDimensions.map(d => ({
   name: d.name,
   value: Math.round(
-    interventionData.reduce((s, i) => s + (i.pre as any)[d.key], 0) /
+    interventionData.reduce((s, i) => s + ((i.pre as any)[d.key] ?? (i.post as any)[d.key] ?? 0), 0) /
       interventionData.length
   ),
 }));
@@ -63,7 +65,7 @@ const avgPre = radarDimensions.map(d => ({
 const avgPost = radarDimensions.map(d => ({
   name: d.name,
   value: Math.round(
-    interventionData.reduce((s, i) => s + (i.post as any)[d.key], 0) /
+    interventionData.reduce((s, i) => s + ((i.post as any)[d.key] ?? 0), 0) /
       interventionData.length
   ),
 }));
@@ -73,18 +75,16 @@ const overallUplift = Math.round(
   avgPre.reduce((s, d) => s + d.value, 0) / avgPre.length
 );
 
-// 优化有效率：至少 3 个维度提升 ≥ 8 分的优化占比
+// 优化有效率
 const effectiveInterventions = interventionData.filter(i =>
-  radarDimensions.filter(d => (i.post as any)[d.key] - (i.pre as any)[d.key] >= 8).length >= 3
+  radarDimensions.filter(d => ((i.post as any)[d.key] ?? 0) - ((i.pre as any)[d.key] ?? 0) >= 8).length >= 3
 ).length;
 const effectivenessRate = Math.round((effectiveInterventions / interventionData.length) * 100);
 
-// ── 模拟数据：16 周动态演化趋势 ──────────────────────────────
+// 16 周动态演化趋势
 const weeklyTrend = (() => {
   const data = [];
-  // 学习投入度：从 55 稳步上升到 88（S 型曲线）
   const engagementBase = [55, 58, 60, 62, 65, 68, 71, 73, 75, 77, 79, 81, 83, 85, 86, 88];
-  // 课程优化次数：前期密集（3-5 次），后期减少到 0-1 次（系统趋于稳定）
   const interventionCount = [5, 4, 3, 4, 3, 2, 3, 2, 2, 1, 2, 1, 1, 1, 0, 1];
   for (let w = 1; w <= 16; w++) {
     data.push({
@@ -96,7 +96,7 @@ const weeklyTrend = (() => {
   return data;
 })();
 
-// ── 优化前后雷达图（ECharts 版，支持面积叠加对比） ────────────
+// 雷达图 ECharts 配置
 const radarRadarOption = {
   tooltip: { trigger: 'item' },
   legend: {
@@ -136,7 +136,7 @@ const radarRadarOption = {
   }],
 };
 
-// ── 双轴折线图（Recharts 版，左 Y = 课程活力，右 Y = 优化次数） ──
+// 双轴折线图
 const dualAxisChart = (
   <ResponsiveContainer width="100%" height={350}>
     <AreaChart
@@ -213,19 +213,7 @@ const dualAxisChart = (
   </ResponsiveContainer>
 );
 
-// ── 各优化详细对比条形图（ECharts 柱状图） ─────────────────────
-const barSeries = radarDimensions.map(d => ({
-  name: d.name,
-  type: 'bar' as const,
-  barGap: '0',
-  data: interventionData.map(i => (i.pre as any)[d.key]),
-  itemStyle: { color: '#94a3b8', borderRadius: [3, 3, 0, 0] },
-}));
-
-interventionData.forEach((_, idx) => {
-  // Already handled via stacked approach — actually let's do grouped bars
-});
-
+// 柱状图配置
 const barOption = {
   tooltip: { trigger: 'axis' as const, axisPointer: { type: 'shadow' as const } },
   legend: { data: ['优化前', '优化后', '改善幅度'], bottom: 0 },
@@ -241,22 +229,22 @@ const barOption = {
     {
       name: '优化前', type: 'bar' as const, barGap: '0',
       data: radarDimensions.map(d =>
-        Math.round(interventionData.reduce((s, i) => s + (i.pre as any)[d.key], 0) / interventionData.length)
+        Math.round(interventionData.reduce((s, i) => s + ((i.pre as any)[d.key] ?? 0), 0) / interventionData.length)
       ),
       itemStyle: { color: '#94a3b8', borderRadius: [4, 4, 0, 0] },
     },
     {
       name: '优化后', type: 'bar' as const,
       data: radarDimensions.map(d =>
-        Math.round(interventionData.reduce((s, i) => s + (i.post as any)[d.key], 0) / interventionData.length)
+        Math.round(interventionData.reduce((s, i) => s + ((i.post as any)[d.key] ?? 0), 0) / interventionData.length)
       ),
       itemStyle: { color: '#3b82f6', borderRadius: [4, 4, 0, 0] },
     },
     {
       name: '改善幅度', type: 'line' as const, yAxisIndex: 1,
       data: radarDimensions.map(d => {
-        const avgPreVal = interventionData.reduce((s, i) => s + (i.pre as any)[d.key], 0) / interventionData.length;
-        const avgPostVal = interventionData.reduce((s, i) => s + (i.post as any)[d.key], 0) / interventionData.length;
+        const avgPreVal = interventionData.reduce((s, i) => s + ((i.pre as any)[d.key] ?? 0), 0) / interventionData.length;
+        const avgPostVal = interventionData.reduce((s, i) => s + ((i.post as any)[d.key] ?? 0), 0) / interventionData.length;
         return Math.round(avgPostVal - avgPreVal);
       }),
       smooth: true, itemStyle: { color: '#10b981' }, lineStyle: { width: 3 },
@@ -266,7 +254,7 @@ const barOption = {
   grid: { left: 60, right: 60, top: 20, bottom: 60 },
 };
 
-// ── 学术风格说明文字 ───────────────────────────────────────────
+// 学术风格研究结论
 const academicNarrative = (
   <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
     <h3 className="text-base font-semibold text-slate-800 mb-3 flex items-center gap-2">
@@ -279,7 +267,7 @@ const academicNarrative = (
         在 16 周的教学实践中构建了"数据采集 → 学习分析 → 教学决策 → 课程优化 → 成效验证"的完整闭环。
       </p>
       <p>
-        成效验证数据显示：<strong className="text-slate-800">课程生命力综合指标从期初的 {avgPre.reduce((s, d) => s + d.value, 0) / avgPre.length} 分提升至期末的 {avgPost.reduce((s, d) => s + d.value, 0) / avgPost.length} 分，
+        成效验证数据显示：<strong className="text-slate-800">课程四维综合指标从期初的 {avgPre.reduce((s, d) => s + d.value, 0) / avgPre.length} 分提升至期末的 {avgPost.reduce((s, d) => s + d.value, 0) / avgPost.length} 分，
         整体提升 {overallUplift}%</strong>。
         5 次课程优化中有 {effectiveInterventions}/{interventionData.length} 次达到有效标准（≥3 个维度提升 ≥8 分），
         <strong className="text-emerald-600">优化有效率达 {effectivenessRate}%</strong>，
@@ -287,7 +275,7 @@ const academicNarrative = (
       </p>
       <p>
         动态演化趋势进一步印证了系统的健康运行：{' '}
-        <strong className="text-blue-600">学习投入度呈 S 型曲线稳步上升</strong>（从 55 至 88），
+        <strong className="text-blue-600">课程活力呈 S 型曲线稳步上升</strong>（从 55 至 88），
         而 {' '}
         <strong className="text-amber-600">人机协同优化频率随时间递减</strong>（从初期每周 3-5 次降至后期 0-1 次），
         说明系统通过持续的优化迭代，使课程状态逐步趋于良性均衡，
@@ -300,11 +288,11 @@ const academicNarrative = (
   </div>
 );
 
-// ── 核心指标卡片数据 ───────────────────────────────────────────
+// 核心指标卡片
 const metricCards = [
   {
     icon: TrendingUp,
-    label: '课程活力整体提升',
+    label: '课程四维综合提升',
     value: `+${overallUplift}%`,
     sub: `从 ${avgPre.reduce((s, d) => s + d.value, 0) / avgPre.length} → ${avgPost.reduce((s, d) => s + d.value, 0) / avgPost.length} 分`,
     color: 'text-emerald-600',
@@ -333,6 +321,50 @@ const metricCards = [
     sub: '系统趋于稳定，课程自主演进',
     color: 'text-amber-600',
     bg: 'bg-amber-100',
+  },
+];
+
+// 课程四维指标详情
+const fourDimensionDetails = [
+  {
+    label: '学生学的状态',
+    icon: Users,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    pre: avgPre[0]?.value ?? 0,
+    post: avgPost[0]?.value ?? 0,
+    detail: '视频专注度、弹幕互动率、情绪分布的综合提升',
+  },
+  {
+    label: '老师教的状态',
+    icon: Mic,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
+    pre: avgPre[1]?.value ?? 0,
+    post: avgPost[1]?.value ?? 0,
+    detail: '讲授语速、走动轨迹、课件切换节奏的优化',
+  },
+  {
+    label: '平台资源质量',
+    icon: BookOpen,
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    pre: avgPre[2]?.value ?? 0,
+    post: avgPost[2]?.value ?? 0,
+    detail: '课件完播率、视频回看热区、资源下载量的改善',
+  },
+  {
+    label: '教学互动方式',
+    icon: MessageSquare,
+    color: 'text-amber-600',
+    bg: 'bg-amber-50',
+    borderColor: 'border-amber-200',
+    pre: avgPre[3]?.value ?? 0,
+    post: avgPost[3]?.value ?? 0,
+    detail: '生生讨论活跃度、师生问答关联度的提升',
   },
 ];
 
@@ -375,10 +407,45 @@ export default function EfficacyEvalPage() {
         })}
       </div>
 
+      {/* 课程四维改进成效 */}
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/30 rounded-xl border border-slate-200 shadow-sm p-6">
+        <h3 className="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+          <TrendingUp size={18} className="text-blue-600" />
+          课程四维改进成效对比（优化前 vs 优化后）
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {fourDimensionDetails.map((dim, i) => {
+            const Icon = dim.icon;
+            const improvement = dim.post - dim.pre;
+            return (
+              <div key={i} className={`bg-white rounded-xl border ${dim.borderColor} p-4 shadow-sm`}>
+                <div className={`flex items-center gap-2 mb-3 ${dim.bg} p-2 rounded-lg`}>
+                  <Icon size={16} className={dim.color} />
+                  <span className="text-sm font-semibold text-slate-700">{dim.label}</span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-slate-500">优化前</span>
+                  <span className="text-sm font-bold text-slate-600">{dim.pre} 分</span>
+                </div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs text-slate-500">优化后</span>
+                  <span className="text-sm font-bold text-emerald-600">{dim.post} 分</span>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+                  <span className="text-xs text-slate-500">改善幅度</span>
+                  <span className="text-sm font-bold text-blue-600">+{improvement} 分</span>
+                </div>
+                <p className="text-[10px] text-slate-400 mt-2">{dim.detail}</p>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* 雷达图 + 柱状图 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* 雷达图：Pre vs Post */}
-        <CardChart title="五维指标优化前后对比（雷达图）" option={radarRadarOption} height={420} />
+        <CardChart title="课程四维指标优化前后对比（雷达图）" option={radarRadarOption} height={420} />
 
         {/* 双轴折线图：学习投入度 + 干预次数 */}
         <RechartsCard title="课程活力与人机协同优化次数动态演化">
@@ -387,14 +454,14 @@ export default function EfficacyEvalPage() {
       </div>
 
       {/* 柱状图：各维度改善 */}
-      <CardChart title="五维指标优化前后对比（柱状图 + 改善幅度）" option={barOption} height={380} />
+      <CardChart title="课程四维指标优化前后对比（柱状图 + 改善幅度）" option={barOption} height={380} />
 
       {/* 各优化详细对比 */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {interventionData.map((intv) => {
           const improvements: number[] = [];
           radarDimensions.forEach(d => {
-            improvements.push((intv.post as any)[d.key] - (intv.pre as any)[d.key]);
+            improvements.push(((intv.post as any)[d.key] ?? 0) - ((intv.pre as any)[d.key] ?? 0));
           });
           const avgImp = Math.round(improvements.reduce((a, b) => a + b, 0) / improvements.length);
 
@@ -410,12 +477,12 @@ export default function EfficacyEvalPage() {
 
               <div className="space-y-2">
                 {radarDimensions.map(d => {
-                  const imp = (intv.post as any)[d.key] - (intv.pre as any)[d.key];
-                  const prePct = ((intv.pre as any)[d.key] / 100) * 100;
-                  const postPct = ((intv.post as any)[d.key] / 100) * 100;
+                  const imp = ((intv.post as any)[d.key] ?? 0) - ((intv.pre as any)[d.key] ?? 0);
+                  const prePct = Math.max(0, ((intv.pre as any)[d.key] ?? 0));
+                  const postPct = Math.max(0, ((intv.post as any)[d.key] ?? 0));
                   return (
                     <div key={d.key} className="flex items-center gap-2">
-                      <span className="text-xs text-slate-500 w-16">{d.name}</span>
+                      <span className="text-xs text-slate-500 w-20">{d.name}</span>
                       <div className="flex-1 flex items-center gap-1">
                         <div className="flex-1 bg-slate-100 rounded-full h-2 relative">
                           <div

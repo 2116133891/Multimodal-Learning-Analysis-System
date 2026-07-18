@@ -1,10 +1,12 @@
-// ===== 动态诊断页面 =====
+// ===== 动态诊断页面（课程中心视角） =====
+// 核心概念：基于多源数据联动的课程动态诊断 — 从"结果评价"向"过程诊断"转变
+// 四个诊断维度：学生学的状态、老师教的状态、平台资源质量、教学互动方式
 import { useEffect, useState } from 'react';
 import { useStore } from '../hooks/useStore';
 import CardChart from '../components/CardChart';
-import { AlertTriangle, ArrowRight, Monitor, Users, Clock, TrendingDown, BookOpen, Wifi, WifiOff, Activity, Zap, Database, ArrowDown, BarChart3, GraduationCap } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Monitor, Users, Clock, TrendingDown, BookOpen, Wifi, Activity, Zap, Database, ArrowDown, BarChart3, Mic, MessageSquare, Eye } from 'lucide-react';
 
-// ── O2O 混合式教学断点诊断模拟数据 ────────────────────────────
+// ── O2O 混合式教学断点诊断模拟数据（课程级） ────────────────────────────
 interface O2OBreakpoint {
   phase: '课前线上' | '课中线下' | '课后线上';
   studentsEntered: number;
@@ -21,7 +23,7 @@ const o2oBreakpoints: O2OBreakpoint[] = [
     studentsExited: 8,
     avgScore: 58,
     avgEngagement: 62,
-    keyRisk: '视频完播率仅 52%，"后印象派"段落重播率 67%',
+    keyRisk: '视频完播率仅 52%，"后印象派"段落重播率 67%，课程资源质量预警',
   },
   {
     phase: '课中线下',
@@ -29,7 +31,7 @@ const o2oBreakpoints: O2OBreakpoint[] = [
     studentsExited: 3,
     avgScore: 74,
     avgEngagement: 78,
-    keyRisk: '实操环节参与率 91%，但小组讨论深度不足',
+    keyRisk: '实操环节参与率 91%，但小组讨论深度不足，教学互动方式需优化',
   },
   {
     phase: '课后线上',
@@ -37,7 +39,7 @@ const o2oBreakpoints: O2OBreakpoint[] = [
     studentsExited: 6,
     avgScore: 65,
     avgEngagement: 55,
-    keyRisk: '拓展讨论帖回复率仅 43%，自主延伸学习动力不足',
+    keyRisk: '拓展讨论帖回复率仅 43%，自主延伸学习动力不足，学生学的状态需关注',
   },
 ];
 
@@ -46,16 +48,16 @@ const totalEntered = o2oBreakpoints[0].studentsEntered;
 const totalLost = o2oBreakpoints.reduce((s, bp) => s + bp.studentsExited, 0);
 const totalRetained = o2oBreakpoints[o2oBreakpoints.length - 1].studentsEntered;
 
-// ── O2O 全景数据流配置 ────────────────────────────────────────
+// ── O2O 全景数据流配置（课程四维指标） ────────────────────────────────────────
 interface O2ODataFlowPhase {
   label: string;
-  icon: typeof Wifi;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   gradient: string;
   bgGradient: string;
   borderColor: string;
   badgeBg: string;
   badgeColor: string;
-  metrics: { label: string; value: string; unit: string; icon: typeof Activity }[];
+  metrics: { label: string; value: string; unit: string; icon: React.ComponentType<{ size?: number; className?: string }> }[];
   modalities: { label: string; color: string; value: number }[];
   description: string;
 }
@@ -123,15 +125,67 @@ const o2oDataFlows: O2ODataFlowPhase[] = [
   },
 ];
 
-// 检查圈图标（用于课中阶段）
+// 检查圈图标
 function CheckCircle(props: { size?: number; className?: string }) {
   return (
     <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <path d="M22 11.08V12a10 10 0 1 1 -5.93-9.14" />
       <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   );
 }
+
+// 课程四维诊断数据
+const courseFourDimensions = [
+  {
+    label: '学生学的状态',
+    icon: Users,
+    color: 'text-blue-600',
+    bg: 'bg-blue-50',
+    borderColor: 'border-blue-200',
+    metrics: [
+      { label: '视频专注度', value: '64', unit: '分', icon: Eye },
+      { label: '弹幕互动率', value: '3.2', unit: '条/min', icon: MessageSquare },
+      { label: '情绪积极占比', value: '72', unit: '%', icon: Activity },
+    ],
+  },
+  {
+    label: '老师教的状态',
+    icon: Mic,
+    color: 'text-emerald-600',
+    bg: 'bg-emerald-50',
+    borderColor: 'border-emerald-200',
+    metrics: [
+      { label: '讲授语速', value: '185', unit: '字/min', icon: Activity },
+      { label: '提问频次', value: '12', unit: '次/节', icon: BarChart3 },
+      { label: '情绪饱满度', value: '72', unit: '分', icon: Eye },
+    ],
+  },
+  {
+    label: '平台资源质量',
+    icon: BookOpen,
+    color: 'text-purple-600',
+    bg: 'bg-purple-50',
+    borderColor: 'border-purple-200',
+    metrics: [
+      { label: '课件完播率', value: '67', unit: '%', icon: Activity },
+      { label: '视频回看热区', value: '3', unit: '处', icon: Zap },
+      { label: '资源下载量', value: '142', unit: '次', icon: Database },
+    ],
+  },
+  {
+    label: '教学互动方式',
+    icon: MessageSquare,
+    color: 'text-amber-600',
+    bg: 'bg-amber-50',
+    borderColor: 'border-amber-200',
+    metrics: [
+      { label: '小组讨论热度', value: '77', unit: '分', icon: Activity },
+      { label: '师生问答关联度', value: '68', unit: '%', icon: BarChart3 },
+      { label: '生生讨论活跃度', value: '82', unit: '分', icon: Users },
+    ],
+  },
+];
 
 export default function DiagnosisPage() {
   const { records, alerts, fetchData } = useStore();
@@ -166,6 +220,31 @@ export default function DiagnosisPage() {
       <div>
         <h2 className="text-2xl font-bold text-slate-800">动态诊断</h2>
         <p className="text-sm text-slate-500 mt-1">基于多源数据联动的课程动态诊断 — 从"结果评价"向"过程诊断"转变</p>
+      </div>
+
+      {/* ══ 课程四维诊断概览 ══ */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {courseFourDimensions.map((dim, i) => (
+          <div key={i} className={`bg-white rounded-xl border ${dim.borderColor} shadow-sm p-5`}>
+            <div className={`flex items-center gap-2 mb-4 ${dim.bg} p-2.5 rounded-lg`}>
+              <dim.icon size={18} className={dim.color} />
+              <span className="text-sm font-bold text-slate-800">{dim.label}</span>
+            </div>
+            <div className="space-y-3">
+              {dim.metrics.map((m, mi) => (
+                <div key={mi} className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500 flex items-center gap-1">
+                    <m.icon size={10} className="text-slate-400" />
+                    {m.label}
+                  </span>
+                  <span className="text-sm font-bold text-slate-800">
+                    {m.value}<span className="text-xs text-slate-400 ml-0.5">{m.unit}</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
@@ -318,7 +397,7 @@ export default function DiagnosisPage() {
 
       {/* 告警面板 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
-        <h3 className="text-base font-semibold text-slate-800 mb-4">诊断告警列表</h3>
+        <h3 className="text-base font-semibold text-slate-800 mb-4">课程诊断告警列表</h3>
         <div className="space-y-3">
           {alerts.map(alert => (
             <div key={alert.id} className={`p-4 rounded-lg border-l-4 ${
@@ -406,7 +485,7 @@ export default function DiagnosisPage() {
       {/* 知识薄弱点 */}
       {weakPoints.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
-          <h3 className="text-base font-semibold text-amber-800 mb-2">⚠️ 知识薄弱点识别</h3>
+          <h3 className="text-base font-semibold text-amber-800 mb-2">⚠️ 课程知识薄弱点识别</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {weakPoints.map((wp, i) => (
               <div key={i} className="bg-white rounded-lg p-4 border border-amber-100">
@@ -494,7 +573,7 @@ export default function DiagnosisPage() {
         )}
 
         {activeTab === 'o2o' && (
-          <div className="p-6 space-y-6">
+          <div className="p-6 space-y-6 min-h-100">
             {/* 桑基式漏斗：学生数量流转 */}
             <div>
               <h4 className="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">

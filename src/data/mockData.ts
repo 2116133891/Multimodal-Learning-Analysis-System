@@ -1,12 +1,13 @@
-// ===== 前端可用 Mock 数据（从 server/data/mockData.ts 提取） =====
-// 用于 Vercel 等无后端环境的数据降级（Fallback）
+// ===== 课程持续改进系统 Mock 数据（课程中心视角） =====
+// 核心概念：用多模态数据把"学生学的状态"、"老师教的状态"、"平台资源质量"、"教学互动方式"联动起来，给"课程"画像。
+
 import type {
   CourseInfo, Student, LearningRecord, VitalityScore,
   OptimizationSuggestion, DiagnosticAlert, DataQualityMetrics, DataType,
   MultimodalFeatureVector, ModalityFeature,
   StudentMultimodalProfile, InterventionEffectiveness,
   StudentMultimodalTimeSeries,
-  CourseProfileSnapshot, TeachingState, ResourceUtilization, InteractionMethod,
+  CourseProfileSnapshot, TeachingState, ResourceUtilization, InteractionMethod, TeachingMethod, TeachingEnvironment,
 } from '../types';
 
 // ===================== 课程信息 =====================
@@ -29,7 +30,6 @@ export const mockCourseInfo: CourseInfo = {
     { id: 'o2', name: '知识目标2：理解造型构图法则', moduleIds: ['m2'], dimension: 'knowledge', targetScore: 80 },
     { id: 'o3', name: '技能目标1：具备色彩应用能力', moduleIds: ['m1', 'm3'], dimension: 'skill', targetScore: 85 },
     { id: 'o4', name: '技能目标2：独立完成作品创作', moduleIds: ['m3', 'm4'], dimension: 'skill', targetScore: 80 },
-    { id: 'o5', name: '态度目标1：培养审美素养', moduleIds: ['m1', 'm2', 'm3', 'm4'], dimension: 'attitude', targetScore: 90 },
   ],
 };
 
@@ -107,10 +107,9 @@ export function generateMockRecords(): LearningRecord[] {
       });
     }
 
-    // outcome — 每周都有，模拟随课程深入成绩逐步提升
+    // outcome
     for (let week = 1; week <= 16; week++) {
-      // 学习趋势：前期 10-30 分波动，后期 30-50 分波动
-      const trendOffset = Math.floor((week - 1) / 16 * 20); // 第1周偏移0，第16周偏移~19
+      const trendOffset = Math.floor((week - 1) / 16 * 20);
       const examScore = Math.floor(rand() * (20 + trendOffset)) + 10 + trendOffset;
       const projectScore = Math.floor(rand() * (20 + trendOffset)) + 10 + trendOffset;
       const clampedExam = Math.min(100, Math.max(0, examScore));
@@ -121,6 +120,7 @@ export function generateMockRecords(): LearningRecord[] {
         type: 'outcome',
         studentId: student.id,
         moduleId: week <= 4 ? 'm1' : week <= 8 ? 'm2' : week <= 12 ? 'm3' : 'm4',
+        objectiveId: week <= 4 ? 'o1' : week <= 8 ? 'o2' : week <= 12 ? 'o3' : 'o4',
         week,
         timestamp: `2025-0${Math.min(12, Math.ceil(week / 4))}-25T16:00:00Z`,
         value: Math.floor((clampedExam + clampedProject) / 2),
@@ -235,7 +235,7 @@ export function generateMockVitalityScores(): VitalityScore[] {
   return scores;
 }
 
-// ===================== AI 优化建议 =====================
+// ===================== AI 优化建议（课程改进方案） =====================
 
 export const mockSuggestions: OptimizationSuggestion[] = [
   {
@@ -511,10 +511,6 @@ export const mockInterventions: InterventionEffectiveness[] = [
 
 // ===================== 45 分钟课堂多模态时序数据 =====================
 
-/**
- * 为指定学生生成 45 分钟课堂的多模态时序数据
- * 每个学生-周组合生成 10 个对齐的时间点，模拟课堂节奏
- */
 export function generateMockClassroomTimeSeries(
   studentId: string,
   week: number
@@ -530,13 +526,11 @@ export function generateMockClassroomTimeSeries(
   const points: StudentMultimodalTimeSeries['points'] = [];
   const fusionScores: number[] = [];
 
-  // 10 个时间点均匀分布在 45 分钟内
   const phaseBoundaries = [0, 4.5, 9, 13.5, 18, 22.5, 27, 31.5, 36, 40.5, 45];
 
   for (let i = 0; i < 10; i++) {
     const tMid = (phaseBoundaries[i] + phaseBoundaries[i + 1]) / 2;
 
-    // 模拟课堂节奏
     let phaseFactor: number;
     if (tMid < 5) {
       phaseFactor = tMid / 5;
@@ -571,7 +565,6 @@ export function generateMockClassroomTimeSeries(
       interactionCount,
     });
 
-    // 加权融合
     const interactionNorm = interactionCount / 20;
     const fused = (
       videoEmotion * 0.5 +
@@ -608,7 +601,6 @@ export function generateMockClassroomTimeSeries(
   };
 }
 
-// 简单字符串哈希函数（用于确定性随机种子）
 function hashString(str: string): number {
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
@@ -621,16 +613,11 @@ function hashString(str: string): number {
 
 // ===================== 课程画像数据（Course Profile）=====================
 
-/**
- * 生成 16 周课程画像快照
- * 包含教师教学状态、课程平台资源、互动方式与教学方法三个维度
- */
 export function generateMockCourseProfiles(): CourseProfileSnapshot[] {
   const snapshots: CourseProfileSnapshot[] = [];
   const rand = seededRandom(2025);
 
   for (let week = 1; week <= 16; week++) {
-    // 教学状态 — 随课程深入逐步改善
     const teachingPace = Math.min(100, Math.max(50, 55 + week * 2.2 + rand() * 10));
     const emotionalEngagement = Math.min(100, Math.max(50, 50 + week * 2.5 + rand() * 12));
     const movementFrequency = Math.min(30, Math.max(5, 12 + Math.floor(rand() * 8) + (week > 8 ? 3 : 0)));
@@ -649,7 +636,6 @@ export function generateMockCourseProfiles(): CourseProfileSnapshot[] {
       pacingVariation: Math.round(pacingVariation),
     };
 
-    // 资源利用率 — 前期偏低，中期回升，后期稳定
     const slideCompletionRate = Math.min(100, Math.max(40, 50 + week * 2.5 + rand() * 8));
     const difficultyReplayRate = Math.min(100, Math.max(15, 30 + (week > 8 ? 15 : 0) + rand() * 20));
     const resourceDownloadCount = Math.floor(10 + week * 3 + rand() * 15);
@@ -670,7 +656,6 @@ export function generateMockCourseProfiles(): CourseProfileSnapshot[] {
       resourceSatisfaction: Math.round(resourceSatisfaction),
     };
 
-    // 互动方式 — 随课程推进逐步增强
     const qAndFFrequency = Math.min(20, Math.max(3, 5 + Math.floor(rand() * 5) + (week > 6 ? 3 : 0)));
     const groupDiscussionHeat = Math.min(100, Math.max(25, 35 + week * 3 + rand() * 15));
     const danmakuActivity = Math.min(15, Math.max(1, 2 + Math.floor(rand() * 5) + (week > 4 ? 2 : 0)));
@@ -691,17 +676,65 @@ export function generateMockCourseProfiles(): CourseProfileSnapshot[] {
       flipClassParticipation: Math.round(flipClassParticipation),
     };
 
-    // 综合健康度
     const teachingScore = (teachingPace + emotionalEngagement + eyeContactRate + pacingVariation) / 4;
     const resourceScore = (slideCompletionRate + videoWatchDepth + contentCoverage + resourceSatisfaction) / 4;
     const interactionScore = (groupDiscussionHeat + discussionBoardActivity / 2 + livePollParticipation + flipClassParticipation) / 4;
     const overallHealth = Math.min(100, Math.max(30, Math.round((teachingScore + resourceScore + interactionScore) / 3)));
 
-    // 健康等级
+    // 教学方法维度（新增第五维度）
+    const caseTeachingScore = Math.min(100, Math.max(40, 50 + week * 2.5 + rand() * 15));
+    const flippedClassScore = Math.min(100, Math.max(30, 35 + week * 3.5 + rand() * 20));
+    const projectBasedScore = Math.min(100, Math.max(45, 55 + week * 2 + rand() * 15));
+    const scaffoldedLearningScore = Math.min(100, Math.max(40, 45 + week * 2.8 + rand() * 18));
+    const cooperativeLearningScore = Math.min(100, Math.max(35, 40 + week * 3 + rand() * 20));
+    const inquiryBasedScore = Math.min(100, Math.max(30, 35 + week * 3.2 + rand() * 22));
+    const differentiationScore = Math.min(100, Math.max(35, 40 + week * 2.5 + rand() * 20));
+    const formativeAssessmentScore = Math.min(100, Math.max(40, 50 + week * 2.2 + rand() * 15));
+
+    const teachingMethod: TeachingMethod = {
+      caseTeachingScore: Math.round(caseTeachingScore),
+      flippedClassScore: Math.round(flippedClassScore),
+      projectBasedScore: Math.round(projectBasedScore),
+      scaffoldedLearningScore: Math.round(scaffoldedLearningScore),
+      cooperativeLearningScore: Math.round(cooperativeLearningScore),
+      inquiryBasedScore: Math.round(inquiryBasedScore),
+      differentiationScore: Math.round(differentiationScore),
+      formativeAssessmentScore: Math.round(formativeAssessmentScore),
+    };
+
+    // 第六维度：教学环境（新增）
+    const classroomTemperature = Math.min(100, Math.max(50, 65 + week * 1.5 + rand() * 15));
+    const lightingLevel = Math.min(100, Math.max(50, 70 + rand() * 20));
+    const acousticsQuality = Math.min(100, Math.max(45, 60 + week * 1.8 + rand() * 20));
+    const seatingArrangement = Math.min(100, Math.max(50, 55 + week * 2 + rand() * 20));
+    const ventilationQuality = Math.min(100, Math.max(50, 60 + rand() * 25));
+    const equipmentFunctionality = Math.min(100, Math.max(70, 80 + rand() * 15));
+    const roomCapacityRatio = Math.min(100, Math.max(60, 75 + rand() * 15));
+    const accessibilityScore = Math.min(100, Math.max(60, 70 + rand() * 20));
+    const environmentalSatisfaction = Math.min(100, Math.max(50, 55 + week * 1.5 + rand() * 20));
+
+    const teachingEnvironment: TeachingEnvironment = {
+      classroomTemperature: Math.round(classroomTemperature),
+      lightingLevel: Math.round(lightingLevel),
+      acousticsQuality: Math.round(acousticsQuality),
+      seatingArrangement: Math.round(seatingArrangement),
+      ventilationQuality: Math.round(ventilationQuality),
+      equipmentFunctionality: Math.round(equipmentFunctionality),
+      roomCapacityRatio: Math.round(roomCapacityRatio),
+      accessibilityScore: Math.round(accessibilityScore),
+      environmentalSatisfaction: Math.round(environmentalSatisfaction),
+    };
+
+    // PDCA 阶段循环
+    const pdcaStages: CourseProfileSnapshot['pdcaStage'][] = ['plan', 'do', 'check', 'act'];
+    const pdcaStage = pdcaStages[Math.floor((week - 1) / 4) % 4];
+
+    // OBE 目标达成度
+    const obeAchievement = Math.min(100, Math.max(50, 55 + week * 2.5 + rand() * 10));
+
     const healthGrade: CourseProfileSnapshot['healthGrade'] =
       overallHealth >= 85 ? 'A' : overallHealth >= 70 ? 'B' : overallHealth >= 55 ? 'C' : 'D';
 
-    // 风险标签
     const riskFlags: string[] = [];
     if (teachingPace < 60) riskFlags.push('讲授语速偏慢，课堂节奏需加快');
     if (emotionalEngagement < 60) riskFlags.push('教师情绪饱满度偏低');
@@ -712,7 +745,6 @@ export function generateMockCourseProfiles(): CourseProfileSnapshot[] {
     if (flipClassParticipation < 50) riskFlags.push('翻转课堂参与率低');
     if (questionRate < 6) riskFlags.push('课堂提问频次过低');
 
-    // 改善信号
     const improvementSignals: string[] = [];
     if (teachingPace > 75) improvementSignals.push('讲授语速适中，节奏感良好');
     if (emotionalEngagement > 75) improvementSignals.push('教师情绪饱满，感染力强');
@@ -724,20 +756,19 @@ export function generateMockCourseProfiles(): CourseProfileSnapshot[] {
 
     snapshots.push({
       week,
-      dimension: { teachingState, resourceUtilization, interactionMethod },
+      dimension: { teachingState, resourceUtilization, interactionMethod, teachingMethod, teachingEnvironment },
       overallHealth,
       healthGrade,
       riskFlags,
       improvementSignals,
+      pdcaStage,
+      obeAchievement: Math.round(obeAchievement),
     });
   }
 
   return snapshots;
 }
 
-/**
- * 生成教师教学状态 16 周趋势数据（用于折线图）
- */
 export function generateTeachingTrendData() {
   const data: Array<{ week: number; label: string; value: number }> = [];
   const rand = seededRandom(2026);
@@ -763,9 +794,6 @@ export function generateTeachingTrendData() {
   return data;
 }
 
-/**
- * 生成课程资源利用率 16 周趋势数据
- */
 export function generateResourceTrendData() {
   const data: Array<{ week: number; label: string; value: number }> = [];
   const rand = seededRandom(2027);
@@ -790,9 +818,6 @@ export function generateResourceTrendData() {
   return data;
 }
 
-/**
- * 生成互动方式 16 周趋势数据
- */
 export function generateInteractionTrendData() {
   const data: Array<{ week: number; label: string; value: number }> = [];
   const rand = seededRandom(2028);
@@ -818,6 +843,35 @@ export function generateInteractionTrendData() {
   return data;
 }
 
+// ===================== 教学方法趋势数据 =====================
+
+export function generateTeachingMethodTrendData() {
+  const data: Array<{ week: number; label: string; value: number }> = [];
+  const rand = seededRandom(2029);
+  const dimensions: Array<{ key: keyof TeachingMethod; label: string }> = [
+    { key: 'caseTeachingScore', label: '案例教学' },
+    { key: 'flippedClassScore', label: '翻转课堂' },
+    { key: 'projectBasedScore', label: '项目驱动' },
+    { key: 'scaffoldedLearningScore', label: '支架式教学' },
+    { key: 'cooperativeLearningScore', label: '合作学习' },
+    { key: 'inquiryBasedScore', label: '探究式学习' },
+    { key: 'differentiationScore', label: '差异化教学' },
+    { key: 'formativeAssessmentScore', label: '形成性评价' },
+  ];
+
+  for (const dim of dimensions) {
+    for (let week = 1; week <= 16; week++) {
+      const base = 35 + week * 3.2;
+      data.push({
+        week,
+        label: dim.label,
+        value: Math.min(100, Math.max(15, Math.round(base + rand() * 20))),
+      });
+    }
+  }
+  return data;
+}
+
 // ===================== 统一导出 =====================
 
 export function generateAllMockData() {
@@ -837,6 +891,7 @@ export function generateAllMockData() {
     teachingTrendData: generateTeachingTrendData(),
     resourceTrendData: generateResourceTrendData(),
     interactionTrendData: generateInteractionTrendData(),
+    teachingMethodTrendData: generateTeachingMethodTrendData(),
     classroomTimeSeries: (studentId: string, week: number) => generateMockClassroomTimeSeries(studentId, week),
   };
 }

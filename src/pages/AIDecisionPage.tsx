@@ -1,14 +1,14 @@
 // ===== AI决策支持页面（重构：人机协同 + 一键干预闭环） =====
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useStore } from '../hooks/useStore';
 import { useToast } from '../components/ToastManager';
-import { generateCourseImprovementReport } from '../services/llmApi';
+import { generateCourseImprovementReport, callLLMChat } from '../services/llmApi';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
   Brain, Check, X, Edit3, Clock, ChevronDown, Target, Sparkles, Send, Wand2,
   AlertTriangle, MessageSquare, Copy, CheckCircle2, Loader2,
-  Rocket, FileText, ShieldCheck,
+  Rocket, FileText, ShieldCheck, RefreshCw,
 } from 'lucide-react';
 
 const categoryLabels: Record<string, string> = {
@@ -32,17 +32,62 @@ const rejectOptions: { value: string; label: string }[] = [
   { value: 'other', label: '其他原因' },
 ];
 
-// ── AI 沟通话术模板库 ──────────────────────────────────────
+// ── AI 课程改进话术模板库（课程中心视角） ──────────────────────
 const interventionTemplates: Record<string, string> = {
   low_engagement: (week: number, evidence: string[], module: string) =>
-    `课程第 ${week} 周整体参与度出现下降趋势。${evidence.join('。')} 建议在${module}模块增加互动环节，优化教学节奏。`,
+    `AI 诊断提示：第 ${week} 周「${module}」模块整体参与度下降。${evidence.join('。')} 建议教师：1. 放慢讲授语速，增加随堂互动；2. 补充该章节基础图文资源；3. 在关键节点（如第15分钟）增加随堂问答。`,
   knowledge_gap: (week: number, evidence: string[], module: string) =>
-    `多模态分析显示第 ${week} 周「${module}」模块的知识掌握度低于预期。${evidence.join('。')} 建议调整教学资源配比，增加针对性辅导材料。`,
+    `AI 诊断提示：第 ${week} 周「${module}」模块知识掌握度低于预期。${evidence.join('。')} 建议：1. 增加分层练习题；2. 补充案例教学资源；3. 调整下一课时难度梯度。`,
   performance_drop: (week: number, evidence: string[], module: string) =>
-    `系统监测到第 ${week} 周课程整体表现有所下滑。${evidence.join('。')} 这可能反映了教学节奏或资源适配的问题，建议审视当前教学设计。`,
+    `AI 诊断提示：第 ${week} 周「${module}」模块课程表现下滑。${evidence.join('。')} 可能反映教学节奏或资源适配问题，建议审视当前教学设计并调整互动方式。`,
   anomaly: (week: number, evidence: string[], module: string) =>
-    `系统在第 ${week} 周发现了异常数据模式。${evidence.join('。')} 请检查课程设计与资源供给是否匹配，及时调整教学策略。`,
+    `AI 诊断提示：第 ${week} 周「${module}」模块出现异常数据模式。${evidence.join('。')} 请检查课程设计与资源供给是否匹配，及时调整教学策略。`,
 };
+
+// ── 构建干预话术的系统提示词 ──
+function buildInterventionSystemPrompt(alert: { week: number; type: string; description: string; moduleId?: string; title: string }): string {
+  const moduleNames: Record<string, string> = {
+    m1: '色彩基础与原理', m2: '造型与构图', m3: '风格探索与创新', m4: '综合创作与展示',
+  };
+  const moduleName = alert.moduleId ? moduleNames[alert.moduleId] : '相关章节';
+  const typeLabels: Record<string, string> = {
+    low_engagement: '参与度下降', knowledge_gap: '知识掌握不足',
+    performance_drop: '表现下滑', anomaly: '异常数据模式',
+  };
+
+  return `你是一位专业的课程数据分析助手。请根据以下预警信息，生成一条简短的课程优化建议话术（不超过 150 字）。
+
+## 预警信息
+- 周次：第 ${alert.week} 周
+- 类型：${typeLabels[alert.type] || '异常检测'}
+- 模块：${moduleName}
+- 标题：${alert.title}
+- 详细描述：${alert.description}
+
+## 回答要求
+1. 先用一句话简述数据发现的具体现象（引用关键数字）
+2. 接着给出 2-3 条具体可执行的干预建议（每条不超过 20 字）
+3. 最后说明预期效果
+4. 语气专业、简洁、可操作
+5. 使用中文回答
+6. 不要使用模糊词汇如"可能""也许"，直接给出确定性建议`;
+}
+
+// ── 构建干预话术的用户消息 ──
+function buildInterventionUserPrompt(alert: { week: number; type: string; description: string; moduleId?: string }, regenCount: number): string {
+  const evidence = alert.description.split(/[。！？]/).filter(Boolean).slice(0, 3);
+
+  // 每次重新生成都注入不同的"视角"，确保结果不同
+  const perspectives = [
+    `\n## 本次生成视角：从"教师教学调整"角度分析\n请重点关注教师如何在课堂上即时调整教学策略`,
+    `\n## 本次生成视角：从"课程资源补充"角度分析\n请重点关注需要补充哪些教学资源来解决当前问题`,
+    `\n## 本次生成视角：从"互动方式优化"角度分析\n请重点关注如何通过改变互动方式来提升学生参与度`,
+    `\n## 本次生成视角：从"学习方法指导"角度分析\n请重点关注如何指导学生改进学习方法`,
+  ];
+  const perspective = perspectives[regenCount % perspectives.length];
+
+  return `请基于以下证据生成课程优化建议：\n${evidence.map((e, i) => `${i + 1}. ${e}`).join('\n')}${perspective}`;
+}
 
 // ── 模态框组件 ──────────────────────────────────────────────
 function InterventionModal({
@@ -63,25 +108,45 @@ function InterventionModal({
   const [isSending, setIsSending] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [genError, setGenError] = useState('');
 
+  // ── 调用 LLM 生成干预话术 ──
+  const regenerateWithAI = useCallback(async () => {
+    if (!alert) return;
+    setIsGenerating(true);
+    setGenError('');
+    try {
+      const systemPrompt = buildInterventionSystemPrompt(alert);
+      const userPrompt = buildInterventionUserPrompt(alert);
+      const content = await callLLMChat([
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]);
+      setDraftText(content);
+    } catch (err: any) {
+      const errorMsg = err?.message || '生成失败';
+      setGenError(errorMsg);
+      // 回退到本地模板
+      const evidence = alert.description.split(/[。！？]/).filter(Boolean).slice(0, 3);
+      const module = alert.moduleId
+        ? { m1: '色彩基础与原理', m2: '造型与构图', m3: '风格探索与创新', m4: '综合创作与展示' }[alert.moduleId]
+        : '相关章节';
+      const template = interventionTemplates[alert.type] || interventionTemplates.anomaly;
+      setDraftText(template(alert.week, evidence, module));
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [alert]);
+
+  // 打开模态框时自动生成
   useEffect(() => {
     if (isOpen && alert) {
-      setIsGenerating(true);
-      // 模拟 AI 生成延迟
-      const timer = setTimeout(() => {
-        const evidence = alert.description.split(/[。！？]/).filter(Boolean).slice(0, 3);
-        const module = alert.moduleId
-          ? { m1: '色彩基础与原理', m2: '造型与构图', m3: '风格探索与创新', m4: '综合创作与展示' }[alert.moduleId]
-          : '相关章节';
-        const template = interventionTemplates[alert.type] || interventionTemplates.anomaly;
-        setDraftText(template(alert.week, evidence, module));
-        setIsGenerating(false);
-      }, 800);
-      return () => clearTimeout(timer);
+      regenerateWithAI();
+    } else {
+      setDraftText('');
+      setGenError('');
     }
-  }, [isOpen, alert]);
-
-  if (!isOpen || !alert) return null;
+  }, [isOpen, alert, regenerateWithAI]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(draftText);
@@ -91,7 +156,6 @@ function InterventionModal({
 
   const handleSend = async () => {
     setIsSending(true);
-    // 模拟发送延迟
     await new Promise(resolve => setTimeout(resolve, 1200));
     setIsSending(false);
     setShowSuccess(true);
@@ -100,6 +164,8 @@ function InterventionModal({
       onClose();
     }, 3000);
   };
+
+  if (!isOpen || !alert) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -163,6 +229,13 @@ function InterventionModal({
             </div>
           )}
 
+          {/* 生成错误 */}
+          {genError && (
+            <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+              <p className="text-xs text-amber-700">⚠️ {genError}（已使用本地模板生成）</p>
+            </div>
+          )}
+
           {/* 话术编辑区 */}
           {!isGenerating && (
             <div>
@@ -171,13 +244,23 @@ function InterventionModal({
                   <MessageSquare size={14} className="text-blue-500" />
                   AI 生成优化建议
                 </label>
-                <button
-                  onClick={handleCopy}
-                  className="text-xs px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1"
-                >
-                  {copied ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
-                  {copied ? '已复制' : '复制'}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={regenerateWithAI}
+                    disabled={isGenerating}
+                    className="text-xs px-2.5 py-1 bg-violet-50 text-violet-600 rounded-lg hover:bg-violet-100 transition-colors flex items-center gap-1 disabled:opacity-50"
+                  >
+                    <RefreshCw size={12} className={isGenerating ? 'animate-spin' : ''} />
+                    重新生成
+                  </button>
+                  <button
+                    onClick={handleCopy}
+                    className="text-xs px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors flex items-center gap-1"
+                  >
+                    {copied ? <CheckCircle2 size={12} className="text-emerald-500" /> : <Copy size={12} />}
+                    {copied ? '已复制' : '复制'}
+                  </button>
+                </div>
               </div>
               <textarea
                 value={draftText}
@@ -228,22 +311,11 @@ function InterventionModal({
           </button>
           <div className="flex items-center gap-3">
             <button
-              onClick={() => {
-                setDraftText('');
-                setIsGenerating(true);
-                setTimeout(() => {
-                  const evidence = alert.description.split(/[。！？]/).filter(Boolean).slice(0, 3);
-                  const module = alert.moduleId
-                    ? { m1: '色彩基础与原理', m2: '造型与构图', m3: '风格探索与创新', m4: '综合创作与展示' }[alert.moduleId]
-                    : '相关章节';
-                  const template = interventionTemplates[alert.type] || interventionTemplates.anomaly;
-                  setDraftText(template(alert.week, evidence, module));
-                  setIsGenerating(false);
-                }, 600);
-              }}
-              className="px-4 py-2 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1.5"
+              onClick={regenerateWithAI}
+              disabled={isGenerating}
+              className="px-4 py-2 text-sm text-violet-600 bg-violet-50 border border-violet-200 rounded-lg hover:bg-violet-100 transition-colors flex items-center gap-1.5 disabled:opacity-50"
             >
-              <Wand2 size={14} />
+              <RefreshCw size={14} className={isGenerating ? 'animate-spin' : ''} />
               重新生成
             </button>
             <button
@@ -259,7 +331,7 @@ function InterventionModal({
               ) : (
                 <>
                   <Send size={14} />
-                  一键生成（模拟）
+                  一键生成
                 </>
               )}
             </button>
@@ -463,7 +535,7 @@ export default function AIDecisionPage() {
             <button
               onClick={handleGenerateReport}
               disabled={reportLoading}
-              className="px-5 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg whitespace-nowrap"
+              className="px-5 py-2.5 bg-gradient-to-br from-violet-600 to-indigo-600 text-white rounded-xl text-sm font-semibold hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shadow-md hover:shadow-lg whitespace-nowrap"
             >
               {reportLoading ? (
                 <>
@@ -472,8 +544,8 @@ export default function AIDecisionPage() {
                 </>
               ) : (
                 <>
-                  <Sparkles size={16} />
-                  生成本周课程改进报告
+                  <RefreshCw size={16} />
+                  {reportContent ? '重新生成报告' : '生成本周课程改进报告'}
                 </>
               )}
             </button>
